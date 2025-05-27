@@ -38,6 +38,9 @@ logs/
 .env.production
 .env.staging
 
+# git files
+.gitignore
+
 # Virtual environments
 venv/
 env/
@@ -138,3 +141,10 @@ dev-debug.log
 # Task files
 tasks.json
 tasks/ 
+
+# AI Code
+.cursor/
+.roo/
+*.roomodes
+*.windsurfrules
+scripts/
