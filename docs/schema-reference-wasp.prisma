@@ -1,0 +1,159 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String            @id @default(uuid())
+  username           String            @unique
+  email              String?           @unique
+  password           String
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  searchSessions     SearchSession[]
+}
+
+model SearchSession {
+  id                String            @id @default(uuid())
+  name              String
+  description       String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  searchQueries     SearchQuery[]
+  searchExecutions  SearchExecution[]
+  processedResults  ProcessedResult[]
+  reviewTags        ReviewTag[]
+}
+
+model SearchQuery {
+  id                String            @id @default(uuid())
+  query             String
+  description       String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  sessionId         String
+  searchSession     SearchSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  searchExecutions  SearchExecution[]
+  rawSearchResults  RawSearchResult[]
+}
+
+model SearchExecution {
+  id                String            @id @default(uuid())
+  status            String            // "pending", "running", "completed", "error"
+  startTime         DateTime          @default(now())
+  endTime           DateTime?
+  resultCount       Int?
+  error             String?
+  queryId           String
+  sessionId         String
+  searchQuery       SearchQuery       @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  searchSession     SearchSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model RawSearchResult {
+  id                String            @id @default(uuid())
+  queryId           String
+  title             String
+  url               String
+  snippet           String?
+  rank              Int
+  searchEngine      String            // "google", "serper"
+  rawResponse       Json
+  searchQuery       SearchQuery       @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  processedResult   ProcessedResult?
+}
+
+model ProcessedResult {
+  id                String            @id @default(uuid())
+  rawResultId       String            @unique
+  sessionId         String
+  title             String
+  url               String
+  snippet           String?
+  metadata          Json              // Normalized metadata from raw result
+  rawSearchResult   RawSearchResult   @relation(fields: [rawResultId], references: [id], onDelete: Cascade)
+  searchSession     SearchSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  reviewTags        ReviewTagAssignment[]
+  notes             Note[]
+  duplicateOf       DuplicateRelationship[] @relation("primaryResult")
+  duplicates        DuplicateRelationship[] @relation("duplicateResult")
+}
+
+model DuplicateRelationship {
+  id                String            @id @default(uuid())
+  primaryResultId   String
+  duplicateResultId String
+  similarityScore   Float
+  duplicateType     String            // "exact", "similar", "subset"
+  primaryResult     ProcessedResult   @relation("primaryResult", fields: [primaryResultId], references: [id], onDelete: Cascade)
+  duplicateResult   ProcessedResult   @relation("duplicateResult", fields: [duplicateResultId], references: [id], onDelete: Cascade)
+}
+
+model ReviewTag {
+  id                String            @id @default(uuid())
+  name              String
+  color             String            // Hex color code
+  sessionId         String
+  searchSession     SearchSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  assignments       ReviewTagAssignment[]
+}
+
+model ReviewTagAssignment {
+  id                String            @id @default(uuid())
+  tagId             String
+  resultId          String
+  reason            String?           // Required for "Exclude" tags
+  tag               ReviewTag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  result            ProcessedResult   @relation(fields: [resultId], references: [id], onDelete: Cascade)
+}
+
+model Note {
+  id                String            @id @default(uuid())
+  content           String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  resultId          String
+  result            ProcessedResult   @relation(fields: [resultId], references: [id], onDelete: Cascade)
+}
+
+// Phase 2 entities (can be uncommented and filled in schema.prisma when ready)
+// model Organization {
+//   id                String            @id @default(uuid())
+//   name              String
+//   createdAt         DateTime          @default(now())
+//   updatedAt         DateTime          @updatedAt
+//   users             User[]
+//   teams             Team[]
+// }
+//
+// model Team {
+//   id                String            @id @default(uuid())
+//   name              String
+//   organizationId    String
+//   organization      Organization      @relation(fields: [organizationId], references: [id])
+//   createdAt         DateTime          @default(now())
+//   updatedAt         DateTime          @updatedAt
+//   members           TeamMembership[]
+//   searchSessions    SearchSession[]
+// }
+//
+// model TeamMembership {
+//   id                String            @id @default(uuid())
+//   userId            String
+//   teamId            String
+//   role              String            // "member", "admin"
+//   user              User              @relation(fields: [userId], references: [id])
+//   team              Team              @relation(fields: [teamId], references: [id])
+//   createdAt         DateTime          @default(now())
+//   updatedAt         DateTime          @updatedAt
+//   @@unique([userId, teamId])
+// } 

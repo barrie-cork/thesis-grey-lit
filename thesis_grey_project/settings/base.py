@@ -73,7 +73,7 @@ ROOT_URLCONF = 'thesis_grey_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -104,6 +104,8 @@ DATABASES = {
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 
+# Custom User Model
+AUTH_USER_MODEL = 'accounts.User'
 
 
 # Password validation
@@ -115,6 +117,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,  # Set minimum password length to 8 characters
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
