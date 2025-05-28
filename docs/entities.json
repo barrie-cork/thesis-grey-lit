@@ -1,0 +1,151 @@
+{
+  "entities": [
+    {
+      "id": "model:accounts.User",
+      "type": "Model",
+      "name": "User",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.models.AbstractUser",
+      "attributes": {
+        "id": "UUIDField (Primary Key)",
+        "username": "CharField (from AbstractUser, unique)",
+        "first_name": "CharField (from AbstractUser, blank)",
+        "last_name": "CharField (from AbstractUser, blank)",
+        "email": "EmailField (unique, null, blank)",
+        "is_staff": "BooleanField (from AbstractUser, default=False)",
+        "is_active": "BooleanField (from AbstractUser, default=True)",
+        "date_joined": "DateTimeField (from AbstractUser, auto_now_add)",
+        "created_at": "DateTimeField (auto_now_add)",
+        "updated_at": "DateTimeField (auto_now)",
+        "custom_methods": ["get_full_name", "save"]
+      },
+      "description": "Custom User model for Thesis Grey researchers."
+    },
+    {
+      "id": "form:accounts.SignUpForm",
+      "type": "Form",
+      "name": "SignUpForm",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.forms.UserCreationForm",
+      "model": "model:accounts.User",
+      "fields": ["username", "email", "password1", "password2"],
+      "custom_methods": ["clean_email"]
+    },
+    {
+      "id": "form:accounts.ProfileForm",
+      "type": "Form",
+      "name": "ProfileForm",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.forms.UserChangeForm",
+      "model": "model:accounts.User",
+      "fields": ["username", "email", "first_name", "last_name"],
+      "custom_methods": ["clean_email"]
+    },
+    {
+      "id": "form:accounts.CustomAuthenticationForm",
+      "type": "Form",
+      "name": "CustomAuthenticationForm",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.forms.AuthenticationForm",
+      "fields": ["username (or email)", "password", "remember_me"],
+      "custom_methods": ["clean"]
+    },
+    {
+      "id": "view:accounts.SignUpView",
+      "type": "View",
+      "name": "SignUpView",
+      "app": "accounts",
+      "parent_class": "django.views.generic.CreateView",
+      "form_class": "form:accounts.SignUpForm",
+      "template_name": "template:accounts/signup.html",
+      "success_url_name": "accounts:profile"
+    },
+    {
+      "id": "view:accounts.ProfileView",
+      "type": "View",
+      "name": "ProfileView",
+      "app": "accounts",
+      "parent_class": "django.views.generic.UpdateView",
+      "mixins": ["django.contrib.auth.mixins.LoginRequiredMixin"],
+      "form_class": "form:accounts.ProfileForm",
+      "template_name": "template:accounts/profile.html",
+      "success_url_name": "accounts:profile",
+      "model": "model:accounts.User"
+    },
+    {
+      "id": "view:accounts.CustomLoginView",
+      "type": "View",
+      "name": "CustomLoginView",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.views.LoginView",
+      "form_class": "form:accounts.CustomAuthenticationForm",
+      "template_name": "template:accounts/login.html"
+    },
+    {
+      "id": "view:accounts.CustomLogoutView",
+      "type": "View",
+      "name": "CustomLogoutView",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.views.LogoutView",
+      "next_page_url_name": "accounts:login"
+    },
+    {
+      "id": "view:accounts.CustomPasswordResetView",
+      "type": "View",
+      "name": "CustomPasswordResetView",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.views.PasswordResetView",
+      "template_name": "template:accounts/password_reset.html",
+      "email_template_name": "template:accounts/password_reset_email.html",
+      "subject_template_name": "template:accounts/password_reset_subject.txt",
+      "success_url_name": "accounts:password_reset_done"
+    },
+    {
+      "id": "view:accounts.CustomPasswordResetDoneView",
+      "type": "View",
+      "name": "CustomPasswordResetDoneView",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.views.PasswordResetDoneView",
+      "template_name": "template:accounts/password_reset_done.html"
+    },
+    {
+      "id": "view:accounts.CustomPasswordResetConfirmView",
+      "type": "View",
+      "name": "CustomPasswordResetConfirmView",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.views.PasswordResetConfirmView",
+      "template_name": "template:accounts/password_reset_confirm.html",
+      "success_url_name": "accounts:password_reset_complete"
+    },
+    {
+      "id": "view:accounts.CustomPasswordResetCompleteView",
+      "type": "View",
+      "name": "CustomPasswordResetCompleteView",
+      "app": "accounts",
+      "parent_class": "django.contrib.auth.views.PasswordResetCompleteView",
+      "template_name": "template:accounts/password_reset_complete.html"
+    },
+    { "id": "template:accounts/signup.html", "type": "Template", "name": "signup.html", "path": "apps/accounts/templates/accounts/signup.html" },
+    { "id": "template:accounts/profile.html", "type": "Template", "name": "profile.html", "path": "apps/accounts/templates/accounts/profile.html" },
+    { "id": "template:accounts/login.html", "type": "Template", "name": "login.html", "path": "apps/accounts/templates/accounts/login.html" },
+    { "id": "template:accounts/password_reset.html", "type": "Template", "name": "password_reset.html", "path": "apps/accounts/templates/accounts/password_reset.html" },
+    { "id": "template:accounts/password_reset_done.html", "type": "Template", "name": "password_reset_done.html", "path": "apps/accounts/templates/accounts/password_reset_done.html" },
+    { "id": "template:accounts/password_reset_confirm.html", "type": "Template", "name": "password_reset_confirm.html", "path": "apps/accounts/templates/accounts/password_reset_confirm.html" },
+    { "id": "template:accounts/password_reset_complete.html", "type": "Template", "name": "password_reset_complete.html", "path": "apps/accounts/templates/accounts/password_reset_complete.html" },
+    { "id": "template:accounts/password_reset_email.html", "type": "Template", "name": "password_reset_email.html", "path": "apps/accounts/templates/accounts/password_reset_email.html" },
+    { "id": "template:accounts/password_reset_subject.txt", "type": "Template", "name": "password_reset_subject.txt", "path": "apps/accounts/templates/accounts/password_reset_subject.txt" },
+    { "id": "url:/accounts/signup/", "type": "URL", "name": "accounts:signup", "path_pattern": "/accounts/signup/" },
+    { "id": "url:/accounts/profile/", "type": "URL", "name": "accounts:profile", "path_pattern": "/accounts/profile/" },
+    { "id": "url:/accounts/login/", "type": "URL", "name": "accounts:login", "path_pattern": "/accounts/login/" },
+    { "id": "url:/accounts/logout/", "type": "URL", "name": "accounts:logout", "path_pattern": "/accounts/logout/" },
+    { "id": "url:/accounts/password-reset/", "type": "URL", "name": "accounts:password_reset", "path_pattern": "/accounts/password-reset/" },
+    { "id": "url:/accounts/password-reset/done/", "type": "URL", "name": "accounts:password_reset_done", "path_pattern": "/accounts/password-reset/done/" },
+    { "id": "url:/accounts/reset/<uidb64>/<token>/", "type": "URL", "name": "accounts:password_reset_confirm", "path_pattern": "/accounts/reset/<uidb64>/<token>/" },
+    { "id": "url:/accounts/reset/done/", "type": "URL", "name": "accounts:password_reset_complete", "path_pattern": "/accounts/reset/done/" },
+    { "id": "setting:AUTH_USER_MODEL", "type": "Setting", "name": "AUTH_USER_MODEL", "value": "accounts.User", "file": "thesis_grey_project/settings/base.py" },
+    { "id": "setting:LOGIN_URL", "type": "Setting", "name": "LOGIN_URL", "value": "accounts:login", "file": "thesis_grey_project/settings/base.py" },
+    { "id": "setting:LOGIN_REDIRECT_URL", "type": "Setting", "name": "LOGIN_REDIRECT_URL", "value": "accounts:profile", "file": "thesis_grey_project/settings/base.py" },
+    { "id": "setting:STATIC_URL", "type": "Setting", "name": "STATIC_URL", "value": "static/", "file": "thesis_grey_project/settings/base.py" },
+    { "id": "setting:EMAIL_BACKEND", "type": "Setting", "name": "EMAIL_BACKEND", "value": "django.core.mail.backends.console.EmailBackend", "file": "thesis_grey_project/settings/local.py" }
+  ]
+} 
