@@ -55,3 +55,8 @@ class User(AbstractUser):
         """Return the user's full name or username if name not provided."""
         full_name = super().get_full_name()
         return full_name if full_name.strip() else self.username
+
+    def save(self, *args, **kwargs):
+        if self.email == '':
+            self.email = None
+        super().save(*args, **kwargs)

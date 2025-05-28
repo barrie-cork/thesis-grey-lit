@@ -1,7 +1,7 @@
 # Thesis Grey - Django Implementation
 
 
-wsl to project folder: /mnt/d/Python/Projects/thesis-django-cursor
+wsl to project folder: /mnt/d/Python/Projects/thesis-grey-lit
 VE: source venv/bin/activate
 
 ## Quick Start Guide

@@ -107,6 +107,10 @@ CELERY_BROKER_URL = 'redis://localhost:6379/0'
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
+# Login URLs
+LOGIN_URL = 'accounts:login'
+LOGIN_REDIRECT_URL = 'accounts:profile' # Default redirect after login
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -140,6 +144,9 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+# Email Settings
+DEFAULT_FROM_EMAIL = 'webmaster@localhost' # Or your preferred default from email
 
 
 # Static files (CSS, JavaScript, Images)

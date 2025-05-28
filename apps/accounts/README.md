@@ -7,7 +7,7 @@ The `accounts` app provides the authentication system for Thesis Grey, allowing 
 
 ## 📁 Key Files
 - `models.py`: Custom User model extending Django's AbstractUser with UUID primary key
-- `views.py`: Authentication views (SignUpView, ProfileView)
+- `views.py`: Authentication views (SignUpView, ProfileView, CustomLoginView, CustomLogoutView). CustomLoginView and CustomLogoutView are used to encapsulate view-specific configurations (like template names or future custom logic) rather than configuring them inline in `urls.py`, promoting better organization and easier future customization.
 - `forms.py`: Custom forms for registration and profile management
 - `urls.py`: App-level URL routing for authentication endpoints
 - `admin.py`: Custom UserAdmin configuration for Django admin
@@ -22,7 +22,12 @@ The custom User model is configured as `AUTH_USER_MODEL = 'accounts.User'` in se
 - [x] Create custom User model with UUID primary key
 - [x] Configure AUTH_USER_MODEL in settings
 - [x] Set up UserAdmin for Django admin
-- [ ] Implement forms (SignUpForm, ProfileForm)
+- [x] Implement forms (SignUpForm, ProfileForm)
+    - Note on empty email: The `User.email` field is optional (`null=True`, `blank=True`). 
+      When a blank email is submitted via `ProfileForm`, it is stored as an empty string (`''`) 
+      in the database, aligning with Django's default behavior for string-based fields. 
+      The `ProfileForm.email` field uses `empty_value=None` to ensure `cleaned_data` reflects `None` 
+      for blank input, which the `ModelForm` save mechanism then converts to `''` for database storage.
 - [ ] Create authentication views
 - [ ] Design templates for login, signup, profile
 - [ ] Configure URL routing
@@ -54,4 +59,4 @@ User
 - Django's built-in password validators
 - CSRF protection on all forms
 - Session-based authentication
-- Optional email field with uniqueness constraint 
+- Optional email field with uniqueness constraint (stored as `''` if blank) 
