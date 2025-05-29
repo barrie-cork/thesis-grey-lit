@@ -1,7 +1,33 @@
 # Thesis Grey - Django Implementation
 
+## 🚨 **CRITICAL DEVELOPER ALERT**
 
-wsl to project folder: /mnt/d/Python/Projects/thesis-grey-lit
+### **🚀 NEW DEVELOPERS START HERE**
+**📋 [ONBOARDING_INDEX.md](ONBOARDING_INDEX.md)** - Complete step-by-step onboarding checklist
+
+### ⚠️ **CUSTOM USER MODEL IN USE**
+This project uses a **CUSTOM USER MODEL** (`accounts.User`) instead of Django's default `auth.User`.
+
+**📚 REQUIRED READING BEFORE DEVELOPMENT:**
+- **[CUSTOM_USER_ALERT.md](CUSTOM_USER_ALERT.md)** - Critical implementation details
+- **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** - Complete setup checklist
+- **[apps/accounts/README.md](apps/accounts/README.md)** - Custom User model documentation
+
+**✅ Quick Reference:**
+```python
+# ✅ CORRECT - Always use this pattern
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+# ❌ WRONG - Never use this (will break)
+from django.contrib.auth.models import User
+```
+
+**⚠️ Failing to use the correct User model will cause database errors!**
+
+---
+
+wsl to project folder: /mnt/d/Python/Projects/thesis-grey-lit  
 VE: source venv/bin/activate
 
 ## Quick Start Guide

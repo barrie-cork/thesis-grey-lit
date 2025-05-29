@@ -1,8 +1,8 @@
 # Thesis Grey: Master Project Plan (Django Edition)
 
 **Project Title:** Thesis Grey
-**Version:** 1.0
-**Date:** 2025-05-26
+**Version:** 2.0
+**Date:** 2025-05-29
 **Phase:** 1
 
 ## 1. Executive Summary
@@ -30,17 +30,19 @@ The application, built using the **Django 4.2 framework**, addresses the challen
 ### 3.1 Technology Stack
 
 - **Framework:** Django `4.2.x` (Python)
-- **Frontend:** Django Templates, HTML, CSS (potentially TailwindCSS), JavaScript (for interactivity)
+- **Frontend:** Django Templates, HTML, CSS (with TailwindCSS), JavaScript (for AJAX interactivity)
 - **Backend:** Django, Django ORM
 - **Database:** PostgreSQL (using Psycopg 3)
 - **APIs:** Google Search API via Serper (using a Python client like `requests`)
-- **Background Tasks:** Celery with Redis or RabbitMQ as a broker
+- **Background Tasks:** Celery with Redis as the message broker
 - **DevOps:** Docker, GitHub Actions (basic CI/CD)
-- **API Development (Optional for Phase 1, core for Phase 2):** Django REST Framework
+- **API Development (Phase 1):** Django built-in JSON responses for AJAX functionality, Django REST Framework for Phase 2 if needed
 
 ### 3.2 Architectural Approach
 
 The project will adopt a **modular design using Django Apps**. Each core feature or domain will be encapsulated within its own app, promoting separation of concerns and maintainability. While Django's app structure provides a natural way to organize by feature, the principles of **Vertical Slice Architecture** will still guide development, focusing on implementing features end-to-end. This allows implementation to focus on one feature at a time, ensuring the feature in focus passes all tests before moving to the next. This should guide the roadmap.
+
+**Each Django app should have its own detailed PRD** located in `docs/features/{app_name}/{app_name}-prd.md` that provides implementation-specific details while referencing this master PRD for overall context and architectural decisions.
 
 ### 3.3 Project Structure (Illustrative)
 
@@ -80,6 +82,14 @@ thesis_grey_project/
 │   │   └── ...
 │   ├── reporting/            # Reporting and data export
 │   │   └── ...
+├── docs/                     # Documentation
+│   ├── PRD.md                # This master PRD
+│   └── features/             # App-specific PRDs
+│       ├── review_manager/
+│       │   └── review-manager-prd.md
+│       ├── search_strategy/
+│       │   └── search-strategy-prd.md
+│       └── ...
 ├── static/                   # Project-wide static files (CSS, JS, images)
 │   └── css/
 │   └── js/
@@ -122,8 +132,59 @@ apps/{feature_app_name}/
 
 Phase 1 implements the full database schema designed for both phases, using the **Django ORM** with PostgreSQL. The core entities include:
 
+#### Core Models
+
+**SearchSession Model (Primary Entity)**
+```python
+class SearchSession(models.Model):
+    # Core Phase 1 fields
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # Search strategy fields (PIC framework)
+    population_terms = models.JSONField(default=list, blank=True)
+    interest_terms = models.JSONField(default=list, blank=True)
+    context_terms = models.JSONField(default=list, blank=True)
+    
+    # Ownership and permissions
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_sessions')
+    
+    # Phase 2 collaboration fields (prepared but unused in Phase 1)
+    team = models.ForeignKey('teams.Team', null=True, blank=True, on_delete=models.SET_NULL)
+    collaborators = models.ManyToManyField(User, blank=True, related_name='collaborative_sessions')
+    visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='private')
+    permissions = models.JSONField(default=dict, blank=True)
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='updated_sessions')
+```
+
+**Status Workflow**
+```python
+STATUS_CHOICES = [
+    ('draft', 'Draft'),                    # Just created, no strategy defined
+    ('strategy_ready', 'Strategy Ready'),  # PIC terms defined, ready to execute
+    ('executing', 'Executing Searches'),   # Background tasks running
+    ('processing', 'Processing Results'),  # Raw results being processed
+    ('ready_for_review', 'Ready for Review'), # Results available for screening
+    ('in_review', 'Under Review'),         # User actively reviewing results
+    ('completed', 'Completed'),            # Review finished, ready for export
+    ('failed', 'Failed'),                  # Error occurred during execution
+    ('archived', 'Archived'),              # User archived completed session
+]
+
+VISIBILITY_CHOICES = [
+    ('private', 'Private'),
+    ('team', 'Team'),
+    ('public', 'Public')
+]
+```
+
+**Additional Core Models:**
 - `User`: Stores user authentication and profile information (likely extending Django's built-in `AbstractUser`). `db_comment` will be used for clarity.
-- `SearchSession`: Represents a review session with its search strategy. `db_table_comment` and `db_comment` on fields will be used.
 - `SearchQuery`: Defines specific queries within a session.
 - `SearchExecution`: Tracks the execution of search queries.
 - `RawSearchResult`: Stores raw data from search engines.
@@ -132,6 +193,12 @@ Phase 1 implements the full database schema designed for both phases, using the 
 - `ReviewTag`: Defines tags for categorizing results (Include, Exclude, Maybe).
 - `ReviewTagAssignment`: Links tags to results.
 - `Note`: Stores notes added to results.
+- `SessionActivity`: Audit trail for session changes and activities.
+
+**Database Integrity Rules:**
+- `created_by` uses `CASCADE` - when user is deleted, their sessions are deleted
+- Audit fields (`performed_by`, `updated_by`) use `PROTECT` - preserves audit trail integrity
+- Foreign keys to optional Phase 2 models use `SET_NULL` - allows graceful degradation
 
 Django's migration system will manage schema changes.
 
@@ -155,17 +222,41 @@ Django's migration system will manage schema changes.
 
 ### 4.2 Review Manager Dashboard
 
-**Description:** Central landing page displaying the user's review sessions and allowing creation of new sessions.
+**Description:** Central landing page displaying the user's review sessions with smart navigation and comprehensive session management.
 
 **Key Components (Django context):**
-- `ReviewManagerDashboardView` (Class-Based View or function view).
-- Django template for the dashboard.
-- Django ORM queries to fetch `SearchSession` objects for the user.
-- Django Form for creating new sessions.
+- `DashboardView` (Class-Based View) with session filtering and statistics
+- `SessionCreateView` implementing two-step creation workflow
+- `SessionDetailView`, `SessionUpdateView`, `SessionDeleteView` for full CRUD operations
+- Django templates with responsive card-based layout
+- Session duplication and archiving functionality
 
 **Technical Implementation:**
-- Sessions displayed by status (Draft, In Progress, Completed) via ORM filtering.
-- Navigation to appropriate feature page based on status using Django's URL routing.
+- **Two-Step Session Creation:** Minimal creation (title + description) → immediate redirect to search strategy definition
+- **Smart Navigation:** Session clicks route to next logical step based on status (draft → strategy, ready_for_review → results, etc.)
+- **Status-Based Grouping:** Sessions organised by Active, Completed, Failed with visual status indicators
+- **9-State Status Workflow:** Robust status management with transition validation
+- **Session Management:** Delete (draft only), duplicate (any status), archive (completed only)
+- **Future-Proof Design:** Collaboration fields built into SearchSession model for Phase 2 (unused in Phase 1)
+- **Performance Optimised:** Database indexes and query optimisation for dashboard performance
+
+**Status Workflow Management:**
+```python
+class SessionStatusManager:
+    ALLOWED_TRANSITIONS = {
+        'draft': ['strategy_ready'],
+        'strategy_ready': ['executing', 'draft'],
+        'executing': ['processing', 'failed'],
+        'processing': ['ready_for_review', 'failed'],
+        'ready_for_review': ['in_review'],
+        'in_review': ['completed', 'ready_for_review'],
+        'completed': ['archived', 'in_review'],
+        'failed': ['draft', 'strategy_ready'],
+        'archived': ['completed']
+    }
+```
+
+**Detailed implementation specifications available in:** `docs/features/review_manager/review-manager-prd.md`
 
 ### 4.3 Search Strategy
 
@@ -183,6 +274,8 @@ Django's migration system will manage schema changes.
 - Strategy saved to database via Django ORM.
 - Execution triggers a Celery background job for API calls.
 
+**Detailed implementation specifications available in:** `docs/features/search_strategy/search-strategy-prd.md` (to be created)
+
 ### 4.4 SERP Execution
 
 **Description:** System for executing search queries against external APIs and tracking progress.
@@ -199,6 +292,8 @@ Django's migration system will manage schema changes.
 - Progress tracking and error handling within the Celery task and Django models.
 - Transition to Results Overview after completion.
 
+**Detailed implementation specifications available in:** `docs/features/serp_execution/serp-execution-prd.md` (to be created)
+
 ### 4.5 Results Manager
 
 **Description:** Backend system for processing raw search results and preparing them for review.
@@ -213,6 +308,8 @@ Django's migration system will manage schema changes.
 - Basic deduplication based on normalized URLs using Django ORM.
 - Filtering and sorting capabilities provided by Django ORM and views.
 
+**Detailed implementation specifications available in:** `docs/features/results_manager/results-manager-prd.md` (to be created)
+
 ### 4.6 Review Results
 
 **Description:** Interface for reviewing search results, applying tags, and adding notes, all within a single paginated view.
@@ -226,10 +323,13 @@ Django's migration system will manage schema changes.
 
 **Technical Implementation:**
 - Paginated results display using Django's Paginator.
-- Inline tagging system (Include, Exclude, Maybe) via Django Forms and views.
-- Exclusion reason capture when tagging as "Exclude".
+- Mandatory tagging system (Include, Exclude, Maybe) via Django Forms and views - users must select one tag for each result to complete the review.
+- Exclusion reason capture required when tagging as "Exclude".
+- No reason required for Include or Maybe tags.
 - Simple notes system integrated directly within the results view.
 - PRISMA-compliant workflow.
+
+**Detailed implementation specifications available in:** `docs/features/review_results/review-results-prd.md` (to be created)
 
 ### 4.7 Reporting
 
@@ -247,9 +347,82 @@ Django's migration system will manage schema changes.
 - CSV, JSON, and PDF export of included/excluded results.
 - Summary statistics dashboard with tag distribution and domain distribution.
 
-## 5. Implementation Plan
+**Detailed implementation specifications available in:** `docs/features/reporting/reporting-prd.md` (to be created)
 
-### 5.1 Phase 1 Implementation Sequence
+## 5. Project-Wide Standards
+
+### 5.1 User Experience Standards
+
+**Performance Requirements:**
+- Dashboard loads in < 2 seconds with 100+ sessions
+- Session search returns results in < 500ms
+- Session creation completes in < 30 seconds
+- All user actions receive immediate feedback
+
+**Accessibility Standards:**
+- WCAG 2.1 AA compliance
+- Keyboard navigation support
+- Screen reader compatibility
+- Minimum colour contrast 4.5:1
+- Touch-friendly interface (44px minimum touch targets)
+
+**Responsive Design:**
+- Mobile-first approach
+- Adaptive layout: 1 column (mobile), 2 columns (tablet), 3 columns (desktop)
+- Cross-browser compatibility (Chrome, Firefox, Safari, Edge)
+
+**User Feedback System:**
+- Clear success/error messages for all actions
+- Plain English used (no technical jargon)
+- Status explanations with next steps
+- Contextual help and tooltips
+
+### 5.2 Security Standards
+
+**Authentication & Authorisation:**
+- Users can only access their own sessions (Phase 1)
+- CSRF protection on all forms
+- XSS prevention in templates
+- Proper authentication required for all views
+
+**Data Protection:**
+- SQL injection prevention through ORM
+- Input validation on all forms
+- Session data validated before save
+- Audit logging for sensitive operations
+
+### 5.3 Testing Standards
+
+**Required Test Coverage:**
+- Unit tests for all models, views, and forms
+- Integration tests for complete workflows
+- Performance tests for dashboard and search functionality
+- Accessibility testing with automated tools
+- Cross-browser testing
+
+**Testing Framework:**
+- Django's built-in test framework
+- Factory Boy for test data generation
+- Coverage.py for test coverage measurement
+- Selenium for end-to-end testing
+
+### 5.4 Code Quality Standards
+
+**Code Style:**
+- PEP 8 compliance
+- Type hints where appropriate
+- Comprehensive docstrings
+- Meaningful variable and function names
+
+**Architecture:**
+- Django best practices
+- DRY (Don't Repeat Yourself) principle
+- SOLID principles where applicable
+- Clear separation of concerns between apps
+
+## 6. Implementation Plan
+
+### 6.1 Phase 1 Implementation Sequence
 
 1.  **Project Setup**
     *   Initialize Django project (`django-admin startproject thesis_grey_project`).
@@ -265,6 +438,8 @@ Django's migration system will manage schema changes.
         *   Views for user actions.
     *   **Review Manager Dashboard (`review_manager` app):**
         *   Models, views, templates for session listing and creation.
+        *   Status workflow implementation.
+        *   Session CRUD operations.
     *   **Search Strategy (`search_strategy` app):**
         *   Models, forms, views, templates for strategy definition.
     *   **SERP Execution (`serp_execution` app):**
@@ -289,28 +464,91 @@ Django's migration system will manage schema changes.
     *   Docker containerization (Dockerfile for Django app, Celery worker, Redis, PostgreSQL).
     *   Deployment configuration (e.g., Gunicorn/Uvicorn, Nginx).
 
-### 5.2 Key Dependencies and Considerations
+### 6.2 App Development Order
 
-- **Schema Updates**: The `ReviewTagAssignment` model needs an optional `reason` field (e.g., `reason = models.TextField(blank=True, null=True)`) added to store the justification when a result is tagged as "Exclude".
+1. **accounts** - Foundation for all user-related functionality
+2. **review_manager** - Core session management and dashboard
+3. **search_strategy** - Search strategy definition
+4. **serp_execution** - API integration and background tasks
+5. **results_manager** - Results processing
+6. **review_results** - Results review interface
+7. **reporting** - Reports and data export
+
+### 6.3 Key Dependencies and Considerations
+
+- **Schema Updates**: The `ReviewTagAssignment` model includes a `reason` field (`reason = models.TextField(blank=True, null=True)`) to store the justification when a result is tagged as "Exclude". This field is required for Exclude tags and optional for others.
 - **API Integration**: Proper configuration of the Serper API (API keys in environment variables/Django settings). Python `requests` library for making calls.
 - **Background Jobs**: Celery for handling long-running tasks (API calls, results processing). Requires a message broker like Redis or RabbitMQ.
 - **Data Flow**: Ensuring proper data flow from search strategy definition through execution, processing, review, and reporting, managed by Django views, models, and Celery tasks.
 - **Static Files & Media**: Configure Django for serving static files (CSS, JS) and potentially user-uploaded media if that becomes a feature.
 - **Security**: Implement Django's security best practices (CSRF protection, XSS prevention, HTTPS in production).
 
-## 6. Future Expansion (Phase 2)
+## 7. Future Expansion (Phase 2)
 
 While Phase 1 focuses on core functionality, the architecture is designed to support future expansion in Phase 2:
 
-- **Session Hub**: Enhanced central landing page.
-- **Search Strategy Enhancements**: Advanced operators, templates.
-- **Results Manager Enhancements**: Advanced deduplication, bulk operations.
-- **Review Results Enhancements**: Custom tagging, collaborative review.
-- **Reporting Enhancements**: Custom templates, advanced visualizations.
-- **REST API Development**: Exposing functionalities via Django REST Framework for potential third-party integrations or a decoupled frontend.
+**Collaboration Features:**
+- Multi-user teams and organisations
+- Role-based permissions (Admin, Reviewer, Observer)
+- Real-time collaborative review
+- Session sharing and visibility controls
 
-## 7. Conclusion
+**Advanced Features:**
+- **Session Hub**: Enhanced central landing page with team views
+- **Search Strategy Enhancements**: Advanced operators, strategy templates, saved searches
+- **Results Manager Enhancements**: Advanced deduplication algorithms, bulk operations, AI-assisted categorisation
+- **Review Results Enhancements**: Custom tagging systems, collaborative review workflows, conflict resolution
+- **Reporting Enhancements**: Custom report templates, advanced visualisations, automated report generation
+
+**Technical Enhancements:**
+- **REST API Development**: Full API using Django REST Framework for mobile apps and integrations
+- **Real-time Updates**: WebSocket support for live collaboration
+- **Advanced Search**: Elasticsearch integration for full-text search
+- **Cloud Storage**: Integration with cloud storage providers
+- **Mobile Apps**: Native mobile applications
+
+## 8. Documentation Structure
+
+### 8.1 Master PRD (This Document)
+
+- Overall project vision and goals
+- Cross-app architectural decisions
+- Project-wide standards and requirements
+- Implementation sequence and dependencies
+
+### 8.2 App-Specific PRDs
+
+Each Django app has a dedicated PRD in `docs/features/{app_name}/{app_name}-prd.md`:
+
+- **Detailed implementation specifications**
+- **User acceptance criteria with checkboxes**
+- **Technical architecture specific to the app**
+- **Testing requirements**
+- **Performance benchmarks**
+- **Security considerations**
+- **UI/UX specifications**
+
+### 8.3 Implementation Tasks
+
+Task tracking documents in `docs/features/{app_name}/tasks-{app_name}-implementation.md`:
+
+- Sprint planning and task breakdown
+- Implementation order and dependencies
+- Progress tracking with checkboxes  
+- Development team assignments
+
+## 9. Conclusion
 
 The Thesis Grey project, leveraging the robust **Django 4.2 framework**, aims to significantly improve the process of finding, managing, and reviewing grey literature for systematic reviews and clinical guidelines. Phase 1 establishes the core functionality and architecture, providing a solid foundation for future enhancements in Phase 2.
 
-The project's modular Django app structure, combined with the power of the Django ORM, Celery for background tasks, and PostgreSQL database, ensures a maintainable, scalable, and extensible codebase that can evolve to meet the needs of researchers in this specialized domain.
+The project's modular Django app structure, combined with individual app-specific PRDs, ensures focused development while maintaining overall architectural coherence. The combination of the Django ORM, Celery for background tasks, and PostgreSQL database provides a maintainable, scalable, and extensible codebase that can evolve to meet the needs of researchers in this specialized domain.
+
+**Key Success Factors:**
+- Modular app architecture with clear separation of concerns
+- Comprehensive documentation at both project and app levels
+- User-centered design with measurable acceptance criteria
+- Performance and accessibility standards
+- Future-proof design for Phase 2 collaboration features
+- Robust testing and quality assurance processes
+
+This master PRD serves as the single source of truth for overall project direction, while detailed app-specific PRDs provide the implementation guidance needed by development teams focusing on individual features.

@@ -166,7 +166,11 @@ Thesis Grey is a specialised web application designed to help researchers system
 
 **As a researcher**, I want to tag results as included, excluded, or maybe so that I can categorise them for my review.
 
+**As a researcher**, I want to be required to tag each result with one of the three options (Include/Exclude/Maybe) before I can complete my review and proceed to reporting.
+
 **As a researcher**, I want to provide exclusion reasons when I exclude results so that I can document my decision-making process.
+
+**As a researcher**, I want to be able to add exclusion reasons for excluded results but not be required to provide reasons for included or maybe results.
 
 **As a researcher**, I want to add notes to individual results so that I can capture my thoughts and observations.
 
@@ -176,11 +180,13 @@ Thesis Grey is a specialised web application designed to help researchers system
 
 ### Natural Language Requirements
 
-- The system shall provide tagging functionality using Django forms with predefined `ReviewTag` options:
+- The system shall provide mandatory tagging functionality using Django forms with predefined `ReviewTag` options:
   - Include: results that meet inclusion criteria
   - Exclude: results that don't meet criteria
   - Maybe: results requiring further consideration
+- The system shall require users to tag all results with one of the three options before allowing completion of review and progression to reporting
 - The system shall require exclusion reasons using Django form validation when users tag results as "Exclude"
+- The system shall not require reasons for Include or Maybe tags
 - The system shall provide common exclusion reason options using Django ChoiceField plus TextField for free text
 - The system shall allow users to add notes to individual results using Django ModelForm for `Note` model
 - The system shall support rich text formatting in notes using Django widget or third-party rich text editor

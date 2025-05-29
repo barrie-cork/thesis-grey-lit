@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Define Search Strategy</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .header { border-bottom: 1px solid #ccc; padding-bottom: 20px; margin-bottom: 20px; }
+        .session-info { background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .placeholder { background: #fff3cd; padding: 20px; border-radius: 5px; border-left: 4px solid #ffc107; }
+        .back-link { display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Define Search Strategy</h1>
+    </div>
+    
+    <div class="session-info">
+        <h2>{{ session.title }}</h2>
+        <p><strong>Description:</strong> {{ session.description|default:"No description provided" }}</p>
+        <p><strong>Status:</strong> {{ session.get_status_display }}</p>
+        <p><strong>Created:</strong> {{ session.created_at|date:"F j, Y, g:i a" }}</p>
+    </div>
+    
+    <div class="placeholder">
+        <h3>🚧 Under Development</h3>
+        <p>The search strategy definition feature is currently under development. This page will allow you to:</p>
+        <ul>
+            <li>Define Population, Interest, and Context (PIC) terms</li>
+            <li>Configure search parameters</li>
+            <li>Preview generated search queries</li>
+            <li>Execute searches across multiple databases</li>
+        </ul>
+    </div>
+    
+    <a href="#" class="back-link" onclick="history.back(); return false;">← Back to Previous Page</a>
+</body>
+</html>

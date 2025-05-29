@@ -31,6 +31,15 @@
     { "source": "view:accounts.ProfileView", "target": "view:accounts.ProfileView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:profile"},
     { "source": "view:accounts.CustomLogoutView", "target": "view:accounts.CustomLoginView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:login"},
     { "source": "view:accounts.CustomPasswordResetView", "target": "view:accounts.CustomPasswordResetDoneView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:password_reset_done"},
-    { "source": "view:accounts.CustomPasswordResetConfirmView", "target": "view:accounts.CustomPasswordResetCompleteView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:password_reset_complete"}
+    { "source": "view:accounts.CustomPasswordResetConfirmView", "target": "view:accounts.CustomPasswordResetCompleteView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:password_reset_complete"},
+    { "source": "model:review_manager.SearchSession", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "created_by" },
+    { "source": "model:review_manager.SessionActivity", "target": "model:review_manager.SearchSession", "type": "FOREIGN_KEY", "field_name": "session" },
+    { "source": "model:review_manager.SessionActivity", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "performed_by" },
+    { "source": "form:review_manager.SessionCreateForm", "target": "model:review_manager.SearchSession", "type": "BASED_ON_MODEL" },
+    { "source": "form:review_manager.SessionCreateForm", "target": "model:review_manager.SessionActivity", "type": "CREATES_MODEL_INSTANCE_IN_METHOD", "method_name": "save" },
+    { "source": "view:review_manager.session_create_view", "target": "form:review_manager.SessionCreateForm", "type": "USES_FORM" },
+    { "source": "view:review_manager.session_create_view", "target": "template:review_manager/session_create.html", "type": "RENDERS_TEMPLATE" },
+    { "source": "view:review_manager.session_create_view", "target": "url:search_strategy:define", "type": "REDIRECTS_TO_URL_NAME", "via": "search_strategy:define", "comment": "Target URL entity is a placeholder as search_strategy app is not yet defined." },
+    { "source": "url:/review_manager/create/", "target": "view:review_manager.session_create_view", "type": "ROUTES_TO_VIEW" }
   ]
-} 
+}

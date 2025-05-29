@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Literature Review Dashboard - Thesis Grey{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'review_manager/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <h1>Your Literature Reviews</h1>
+            <div class="quick-stats">
+                <span class="stat">
+                    <i class="icon-total">📊</i>
+                    <strong>{{ total_sessions }}</strong> Total
+                </span>
+                <span class="stat">
+                    <i class="icon-active">⚡</i>
+                    <strong>{{ active_sessions }}</strong> Active
+                </span>
+                <span class="stat">
+                    <i class="icon-completed">✅</i>
+                    <strong>{{ completed_sessions }}</strong> Completed
+                </span>
+            </div>
+        </div>
+        <a href="{% url 'review_manager:create_session' %}" 
+           class="btn btn-primary btn-lg">
+            <i class="icon-plus">➕</i> New Review Session
+        </a>
+    </div>
+    
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <form method="get" class="filter-form">
+            <div class="search-box">
+                <input type="text" 
+                       name="q" 
+                       value="{{ search_query }}"
+                       placeholder="Search sessions by title or description..."
+                       class="form-control">
+            </div>
+            <div class="status-filter">
+                <select name="status" class="form-control" onchange="this.form.submit()">
+                    <option value="all"{% if current_filter == 'all' %} selected{% endif %}>
+                        All Sessions
+                    </option>
+                    <option value="active"{% if current_filter == 'active' %} selected{% endif %}>
+                        Active Only
+                    </option>
+                    {% for status_key, status_label in status_choices %}
+                    <option value="{{ status_key }}"{% if current_filter == status_key %} selected{% endif %}>
+                        {{ status_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if search_query or current_filter != 'all' %}
+            <a href="{% url 'review_manager:dashboard' %}" class="btn btn-link">
+                Clear Filters
+            </a>
+            {% endif %}
+        </form>
+        
+        {% if sessions %}
+        <div class="results-counter text-muted small mt-2">
+            Showing {{ sessions|length }} 
+            {% if current_filter != 'all' or search_query %}
+            of {{ total_sessions }}
+            {% endif %}
+            session{{ sessions|length|pluralize }}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Session Cards Grid -->
+    {% if sessions %}
+    <!-- Implementation Status Info -->
+    <div class="alert alert-info mb-4">
+        <h6 class="alert-heading"><i>🚧</i> Development Status - Sprint 3 Complete</h6>
+        <p class="mb-2">The Review Manager dashboard is fully functional! Other apps are coming in future sprints:</p>
+        <ul class="mb-0 small">
+            <li><strong>Sprint 4:</strong> Search Strategy definition (PIC framework)</li>
+            <li><strong>Sprint 5:</strong> SERP Execution (automated searches)</li>
+            <li><strong>Sprint 6-9:</strong> Results processing and review</li>
+            <li><strong>Sprint 10:</strong> Reporting and export</li>
+        </ul>
+    </div>
+    {% endif %}
+    
+    <div class="sessions-grid">
+        {% for session in sessions %}
+        <article class="session-card" 
+                 role="article"
+                 tabindex="0"
+                 data-status="{{ session.status }}"
+                 data-session-id="{{ session.id }}"
+                 data-next-url="{{ session.nav_info.url }}"
+                 aria-label="Review session: {{ session.title }}">
+            
+            <header>
+                <h3 id="session-{{ session.id }}-title">{{ session.title }}</h3>
+                <span class="status-badge status-{{ session.status }}"
+                      role="status"
+                      aria-label="Status: {{ session.get_status_display }}"
+                      data-bs-toggle="tooltip"
+                      title="{{ session.nav_info.help }}">
+                    {{ session.get_status_display }}
+                </span>
+            </header>
+            
+            <div class="card-body">
+                {% if session.description %}
+                <p id="session-{{ session.id }}-desc">{{ session.description|truncatewords:20 }}</p>
+                {% else %}
+                <p id="session-{{ session.id }}-desc" class="text-muted fst-italic">No description provided</p>
+                {% endif %}
+                
+                <dl class="card-stats">
+                    <dt class="visually-hidden">Created</dt>
+                    <dd><strong>Created:</strong> {{ session.created_at|date:"M d, Y" }}</dd>
+                    
+                    <dt class="visually-hidden">Last Updated</dt>
+                    <dd><strong>Updated:</strong> {{ session.updated_at|date:"M d, Y" }}</dd>
+                </dl>
+            </div>
+            
+            <footer>
+                <a href="{{ session.nav_info.url }}" 
+                   class="action-btn {{ session.nav_info.class }}"
+                   aria-describedby="session-{{ session.id }}-title session-{{ session.id }}-desc"
+                   data-bs-toggle="tooltip"
+                   title="{{ session.nav_info.help }}">
+                    <i class="{{ session.nav_info.icon }}">🔗</i>
+                    {{ session.nav_info.text }}
+                    <span class="visually-hidden">for {{ session.title }}</span>
+                </a>
+                
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                            type="button" 
+                            data-bs-toggle="dropdown" 
+                            aria-expanded="false"
+                            aria-label="More actions for {{ session.title }}">
+                        <i>⋮</i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" 
+                               href="{% url 'review_manager:session_detail' session_id=session.id %}">
+                                <i>👁️</i> View Details
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" 
+                               href="{% url 'review_manager:edit_session' session_id=session.id %}">
+                                <i>✏️</i> Edit Session
+                            </a>
+                        </li>
+                        {% if session.status != 'draft' %}
+                        <li>
+                            <a class="dropdown-item" 
+                               href="{% url 'review_manager:duplicate_session' session_id=session.id %}"
+                               onclick="return confirm('Create a copy of {{ session.title }}?')">
+                                <i>📋</i> Duplicate
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        {% if session.status == 'completed' %}
+                        <li>
+                            <button class="dropdown-item text-warning" 
+                                    onclick="archiveSession({{ session.id }}, '{{ session.title|escapejs }}')">
+                                <i>📦</i> Archive
+                            </button>
+                        </li>
+                        {% endif %}
+                        {% if session.status == 'draft' %}
+                        <li>
+                            <a class="dropdown-item text-danger" 
+                               href="{% url 'review_manager:delete_session' session_id=session.id %}"
+                               onclick="return confirm('Are you sure you want to delete {{ session.title }}? This action cannot be undone.')">
+                                <i>🗑️</i> Delete
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </footer>
+        </article>
+        {% empty %}
+        <div class="empty-state">
+            {% if search_query or current_filter != 'all' %}
+                <h3>No sessions found</h3>
+                <p>Try adjusting your search criteria or filters.</p>
+                <a href="{% url 'review_manager:dashboard' %}" class="btn btn-outline-secondary">
+                    Clear Filters
+                </a>
+            {% else %}
+                <h3>Welcome to Thesis Grey!</h3>
+                <p>You haven't created any literature review sessions yet. Create your first session to get started with systematic grey literature searching.</p>
+                <a href="{% url 'review_manager:create_session' %}" class="btn btn-primary btn-lg">
+                    <i>➕</i> Create Your First Review Session
+                </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="Session pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_filter != 'all' %}status={{ current_filter }}&{% endif %}page=1">
+                        First
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_filter != 'all' %}status={{ current_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                        Previous
+                    </a>
+                </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_filter != 'all' %}status={{ current_filter }}&{% endif %}page={{ page_obj.next_page_number }}">
+                        Next
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_filter != 'all' %}status={{ current_filter }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                        Last
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Archive Session Modal -->
+<div class="modal fade" id="archiveModal" tabindex="-1" aria-labelledby="archiveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="archiveModalLabel">Archive Session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to archive "<span id="archiveSessionTitle"></span>"?</p>
+                <p class="text-muted small">Archived sessions are hidden from the main dashboard but can still be accessed through the archived filter.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmArchive">Archive Session</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'review_manager/js/dashboard.js' %}"></script>
+<script>
+// Archive session functionality
+let sessionToArchive = null;
+
+function archiveSession(sessionId, sessionTitle) {
+    sessionToArchive = sessionId;
+    document.getElementById('archiveSessionTitle').textContent = sessionTitle;
+    const modal = new bootstrap.Modal(document.getElementById('archiveModal'));
+    modal.show();
+}
+
+document.getElementById('confirmArchive').addEventListener('click', async function() {
+    if (!sessionToArchive) return;
+    
+    try {
+        const response = await fetch(`{% url 'review_manager:archive_session_ajax' session_id=0 %}`.replace('0', sessionToArchive), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Hide the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('archiveModal'));
+            modal.hide();
+            
+            // Show success message
+            reviewManagerDashboard.showSuccess(data.message);
+            
+            // Update the session card or reload if on active filter
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('status') === 'active' || !urlParams.get('status') || urlParams.get('status') === 'all') {
+                // Reload page to update the view
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        } else {
+            reviewManagerDashboard.showError(data.error || 'Failed to archive session');
+        }
+    } catch (error) {
+        console.error('Archive error:', error);
+        reviewManagerDashboard.showError('An error occurred while archiving the session');
+    }
+    
+    sessionToArchive = null;
+});
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+});
+</script>
+{% endblock %}

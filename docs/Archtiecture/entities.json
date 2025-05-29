@@ -146,6 +146,84 @@
     { "id": "setting:LOGIN_URL", "type": "Setting", "name": "LOGIN_URL", "value": "accounts:login", "file": "thesis_grey_project/settings/base.py" },
     { "id": "setting:LOGIN_REDIRECT_URL", "type": "Setting", "name": "LOGIN_REDIRECT_URL", "value": "accounts:profile", "file": "thesis_grey_project/settings/base.py" },
     { "id": "setting:STATIC_URL", "type": "Setting", "name": "STATIC_URL", "value": "static/", "file": "thesis_grey_project/settings/base.py" },
-    { "id": "setting:EMAIL_BACKEND", "type": "Setting", "name": "EMAIL_BACKEND", "value": "django.core.mail.backends.console.EmailBackend", "file": "thesis_grey_project/settings/local.py" }
+    { "id": "setting:EMAIL_BACKEND", "type": "Setting", "name": "EMAIL_BACKEND", "value": "django.core.mail.backends.console.EmailBackend", "file": "thesis_grey_project/settings/local.py" },
+    {
+      "id": "model:review_manager.SearchSession",
+      "type": "Model",
+      "name": "SearchSession",
+      "app": "review_manager",
+      "parent_class": "django.db.models.Model",
+      "attributes": {
+        "id": "AutoField (Primary Key)",
+        "title": "CharField",
+        "description": "TextField",
+        "status": "CharField (choices: SearchSession.Status)",
+        "created_by": "ForeignKey (to settings.AUTH_USER_MODEL)",
+        "created_at": "DateTimeField (auto_now_add)",
+        "updated_at": "DateTimeField (auto_now)",
+        "start_date": "DateTimeField (null, blank)",
+        "completed_date": "DateTimeField (null, blank)",
+        "custom_methods": ["__str__", "can_transition_to"]
+      },
+      "description": "Model to track and manage literature review search sessions."
+    },
+    {
+      "id": "model:review_manager.SessionActivity",
+      "type": "Model",
+      "name": "SessionActivity",
+      "app": "review_manager",
+      "parent_class": "django.db.models.Model",
+      "attributes": {
+        "id": "AutoField (Primary Key)",
+        "session": "ForeignKey (to review_manager.SearchSession)",
+        "activity_type": "CharField (choices: SessionActivity.ActivityType)",
+        "description": "TextField",
+        "old_status": "CharField (null, blank, choices: SearchSession.Status)",
+        "new_status": "CharField (null, blank, choices: SearchSession.Status)",
+        "performed_by": "ForeignKey (to settings.AUTH_USER_MODEL)",
+        "performed_at": "DateTimeField (auto_now_add)",
+        "metadata": "JSONField (null, blank)",
+        "custom_methods": ["__str__"]
+      },
+      "description": "Model to log activities and changes in search sessions."
+    },
+    {
+      "id": "form:review_manager.SessionCreateForm",
+      "type": "Form",
+      "name": "SessionCreateForm",
+      "app": "review_manager",
+      "parent_class": "django.forms.ModelForm",
+      "model": "model:review_manager.SearchSession",
+      "fields": ["title", "description"],
+      "widgets_customized": true,
+      "custom_methods": ["__init__", "save"],
+      "description": "Form for the initial creation of a SearchSession, capturing title and description."
+    },
+    {
+      "id": "view:review_manager.session_create_view",
+      "type": "View",
+      "name": "session_create_view",
+      "app": "review_manager",
+      "parent_class": "Function-based view",
+      "decorators": ["login_required"],
+      "form_class": "form:review_manager.SessionCreateForm",
+      "template_name": "template:review_manager/session_create.html",
+      "success_url_name": "search_strategy:define",
+      "description": "Handles the creation of new search sessions."
+    },
+    {
+      "id": "template:review_manager/session_create.html",
+      "type": "Template",
+      "name": "session_create.html",
+      "path": "apps/review_manager/templates/review_manager/session_create.html",
+      "description": "Template for creating a new search session."
+    },
+    {
+      "id": "url:/review_manager/create/",
+      "type": "URL",
+      "name": "review_manager:create_session",
+      "path_pattern": "/review_manager/create/",
+      "description": "URL for creating a new search session."
+    }
   ]
-} 
+}

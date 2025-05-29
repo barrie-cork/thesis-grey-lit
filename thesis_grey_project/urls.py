@@ -17,9 +17,21 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
+from django.contrib.auth.views import redirect_to_login
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+
+def home_redirect(request):
+    """Smart redirect based on authentication status"""
+    if request.user.is_authenticated:
+        return redirect('review_manager:dashboard')
+    else:
+        return redirect('accounts:login')
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/accounts/login/', permanent=False)),
+    path('', home_redirect, name='home'),
     path('admin/', admin.site.urls),
     path('accounts/', include('apps.accounts.urls')),
+    path('review/', include('apps.review_manager.urls')),
+    path('strategy/', include('apps.search_strategy.urls')),
 ]

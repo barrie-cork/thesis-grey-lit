@@ -12,11 +12,11 @@ This document outlines the technology stack for the Thesis Grey project, as deri
             - **Flask/FastAPI:** While excellent for microservices or API-centric applications (FastAPI for high performance), they require more manual setup and integration of components like ORMs, admin interfaces, and form handling, which Django provides out-of-the-box. For a full-featured application like Thesis Grey, Django's integrated components typically lead to faster initial development and less boilerplate.
             - **Older Django Versions:** Using the latest LTS (4.2.x) ensures access to the most recent features, security patches, and a longer support window, which is preferable to starting a new project on an older or non-LTS version.
 
-- **Frontend:** Django Templates, HTML, CSS (potentially TailwindCSS), JavaScript (for interactivity)
+- **Frontend:** Django Templates, HTML, CSS (with TailwindCSS), JavaScript (for AJAX interactivity)
     - **Rationale and Considerations:**
         - **Suitability for Thesis Grey (Phase 1):** For Phase 1, focusing on core functionality and rapid development, Django's built-in template system is highly efficient. It allows for tight integration with the Django backend, reducing complexity and development time for server-rendered pages. This is well-suited for data-driven interfaces where complex client-side state management is not an immediate primary concern.
         - **HTML/CSS/JavaScript:** Standard web technologies provide the necessary tools for structuring content (HTML), styling (CSS), and adding client-side interactivity (JavaScript, e.g., for AJAX form submissions, dynamic updates to parts of a page without full reloads).
-        - **TailwindCSS (Potential):** If adopted, TailwindCSS can significantly speed up UI development by providing utility classes, allowing for rapid styling directly in the HTML. This can be beneficial for achieving a consistent look and feel quickly, especially if a dedicated frontend designer isn't heavily involved in Phase 1.
+        - **TailwindCSS:** TailwindCSS will be used to speed up UI development by providing utility classes, allowing for rapid styling directly in the HTML. This provides a consistent look and feel quickly without requiring a dedicated frontend designer.
         - **Alternatives (JS Frameworks like React/Vue):**
             - While powerful for building highly interactive Single Page Applications (SPAs), introducing a full JavaScript framework in Phase 1 adds complexity (separate build processes, API development for Django, state management).
             - For the initial goals of Thesis Grey, the benefits of an SPA might not outweigh the increased development overhead. Django templates offer a simpler, more direct path to delivering core features quickly. A JS framework could be considered for Phase 2 if more complex client-side interactivity becomes a primary requirement.
@@ -61,7 +61,7 @@ This document outlines the technology stack for the Thesis Grey project, as deri
             - **Data Parsing:** Ensure the client code correctly parses the JSON response from Serper to extract relevant fields (URL, title, snippet) for `RawSearchResult`.
         - **Alternative (Google Custom Search JSON API):** While official, it can be more complex to set up and manage, especially regarding quotas and billing for high-volume usage. Serper often acts as a more developer-friendly layer on top.
 
-- **Background Tasks:** Celery with Redis or RabbitMQ as a broker
+- **Background Tasks:** Celery with Redis as the message broker
     - **Rationale and Considerations:**
         - **Why Celery for Thesis Grey:**
             - **Asynchronous Processing:** Essential for offloading long-running tasks like external API calls (to Serper) and data processing (normalizing results, deduplication) from the main web request-response cycle. This prevents users from experiencing long waits or timeouts.
@@ -75,7 +75,7 @@ This document outlines the technology stack for the Thesis Grey project, as deri
             - **RabbitMQ:**
                 - *Pros:* A dedicated, robust message broker with more advanced features like flexible routing, message acknowledgments, and better guarantees for message persistence and delivery. Generally preferred for critical tasks where losing a message is unacceptable.
                 - *Cons:* More complex to set up and manage than Redis. Higher resource footprint.
-            - **Recommendation for Thesis Grey (Phase 1):** For Phase 1, **Redis** is likely sufficient and simpler to manage, especially if task loss in rare failure scenarios is tolerable or can be mitigated (e.g., tasks are idempotent or can be re-triggered). If absolute message delivery guarantee becomes critical, RabbitMQ could be considered later.
+            - **Recommendation for Thesis Grey (Phase 1):** **Redis** will be used as it is sufficient and simpler to manage for Phase 1 requirements. Tasks will be designed to be idempotent to handle potential failures gracefully.
         - **Celery Best Practices for Thesis Grey:**
             - **Idempotent Tasks:** Design tasks to be idempotent where possible (running them multiple times has the same effect as running once) to handle retries safely.
             - **Task Granularity:** Keep tasks relatively small and focused on a single unit of work.

@@ -3,23 +3,23 @@
 **Version:** 1.0
 **Date:** 2025-05-26
 **Project:** Thesis Grey
-**Source PRD:** [`PRD-D.md`](PRD-D.md:1) (Version 1.0, 2025-05-26)
+**Source PRD:** [`PRD.md`](PRD.md) (Version 1.0, 2025-05-26)
 
 ## 1. Introduction
 
 ### 1.1. Purpose
-This document outlines the software architecture for the "Thesis Grey" project. It details the system's structure, components, interactions, and the technologies used. This architecture is derived from the requirements and goals specified in the Project Requirements Document ([`PRD-D.md`](PRD-D.md:1)).
+This document outlines the software architecture for the "Thesis Grey" project. It details the system's structure, components, interactions, and the technologies used. This architecture is derived from the requirements and goals specified in the Project Requirements Document ([`PRD.md`](PRD.md)).
 
 ### 1.2. Project Overview
 Thesis Grey is a specialized web application designed to help researchers systematically find, manage, and review "grey literature." Built using the Django 4.2 framework, it aims to streamline the creation of search strategies, automate search execution (initially via Google Search API - Serper), and organize results for review, adhering to best practices like PRISMA.
 
 ### 1.3. Scope
-This document covers the architecture for Phase 1 of the Thesis Grey project as defined in the [`PRD-D.md`](PRD-D.md:1).
+This document covers the architecture for Phase 1 of the Thesis Grey project as defined in the [`PRD.md`](PRD.md).
 
 ## 2. Architectural Goals & Constraints
 
 ### 2.1. Goals
-The architecture is designed to achieve the following primary goals for Phase 1 (derived from [`PRD-D.md`](PRD-D.md:21) Section 2):
+The architecture is designed to achieve the following primary goals for Phase 1 (derived from [`PRD.md`](PRD.md) Section 2):
 1.  Provide researchers with tools to create and execute systematic search strategies.
 2.  Enable efficient processing and review of search results.
 3.  Support PRISMA-compliant workflows for literature reviews.
@@ -27,32 +27,32 @@ The architecture is designed to achieve the following primary goals for Phase 1 
 
 ### 2.2. Constraints
 The architecture adheres to the following key constraints:
-1.  **Framework:** Strictly Django `4.2.x` (Python), as per user directive and [`PRD-D.md`](PRD-D.md:32).
-2.  **Database:** PostgreSQL (using Psycopg 3) ([`PRD-D.md`](PRD-D.md:35)).
-3.  **Background Tasks:** Celery with Redis or RabbitMQ as a broker ([`PRD-D.md`](PRD-D.md:37)).
-4.  **External APIs:** Google Search API via Serper ([`PRD-D.md`](PRD-D.md:36)).
-5.  **Development Environment:** Docker for containerization ([`PRD-D.md`](PRD-D.md:38)).
+1.  **Framework:** Strictly Django `4.2.x` (Python), as per user directive and [`PRD.md`](PRD.md).
+2.  **Database:** PostgreSQL (using Psycopg 3) ([`PRD.md`](PRD.md)).
+3.  **Background Tasks:** Celery with Redis as the message broker ([`PRD.md`](PRD.md)).
+4.  **External APIs:** Google Search API via Serper ([`PRD.md`](PRD.md)).
+5.  **Development Environment:** Docker for containerization ([`PRD.md`](PRD.md)).
 
 ## 3. Guiding Principles
 
 The following principles guide the architectural design:
-1.  **Modularity:** The system is decomposed into distinct Django Apps, each encapsulating a core feature or domain, promoting separation of concerns and maintainability ([`PRD-D.md`](PRD-D.md:42)).
-2.  **Vertical Slice Architecture:** Development will focus on implementing features end-to-end (UI to database, including tests) one at a time, ensuring each slice is functional and tested before moving to the next ([`PRD-D.md`](PRD-D.md:43)).
-3.  **Testability:** Emphasis on unit and integration tests for each app using Django's test framework to ensure reliability and maintain code quality ([`PRD-D.md`](PRD-D.md:284)).
-4.  **Maintainability & Extensibility:** The chosen structure and technologies aim for a codebase that is easy to understand, modify, and extend for future phases ([`PRD-D.md`](PRD-D.md:26), [`PRD-D.md`](PRD-D.md:314)).
+1.  **Modularity:** The system is decomposed into distinct Django Apps, each encapsulating a core feature or domain, promoting separation of concerns and maintainability ([`PRD.md`](PRD.md)).
+2.  **Vertical Slice Architecture:** Development will focus on implementing features end-to-end (UI to database, including tests) one at a time, ensuring each slice is functional and tested before moving to the next ([`PRD.md`](PRD.md)).
+3.  **Testability:** Emphasis on unit and integration tests for each app using Django's test framework to ensure reliability and maintain code quality ([`PRD.md`](PRD.md)).
+4.  **Maintainability & Extensibility:** The chosen structure and technologies aim for a codebase that is easy to understand, modify, and extend for future phases ([`PRD.md`](PRD.md)).
 5.  **Adherence to Django Best Practices:** Leveraging Django's built-in features and conventions where possible.
 
 ## 4. Technology Stack
 
-The technology stack for Phase 1 is defined as follows (from [`PRD-D.md`](PRD-D.md:30) Section 3.1):
+The technology stack for Phase 1 is defined as follows (from [`PRD.md`](PRD.md) Section 3.1):
 -   **Framework:** Django `4.2.x` (Python)
--   **Frontend:** Django Templates, HTML, CSS (potentially TailwindCSS), JavaScript (for interactivity)
+-   **Frontend:** Django Templates, HTML, CSS (with TailwindCSS), JavaScript (for AJAX interactivity)
 -   **Backend:** Django, Django ORM
 -   **Database:** PostgreSQL (using Psycopg 3)
 -   **APIs (External):** Google Search API via Serper (using a Python client like `requests`)
--   **Background Tasks:** Celery with Redis or RabbitMQ as a broker
+-   **Background Tasks:** Celery with Redis as the message broker
 -   **DevOps:** Docker, GitHub Actions (basic CI/CD)
--   **API Development (Internal - Optional for Phase 1, core for Phase 2):** Django REST Framework
+-   **API Development (Internal - Phase 1):** Django built-in JSON responses for AJAX functionality, Django REST Framework for Phase 2 if needed
 
 ## 5. System Architecture Overview
 
@@ -107,17 +107,17 @@ The project will be organized into a main Django project (`thesis_grey_project`)
 **Feature-Specific Apps (within `apps/` directory):**
 Each app encapsulates a distinct area of functionality:
 1.  **`accounts`:** User authentication (registration, login, profile management) using Django's built-in auth system.
-2.  **`review_manager`:** Review Manager Dashboard, creation and listing of `SearchSession` objects.
-3.  **`search_strategy`:** Definition and management of search strategies (PIC framework, parameters) within a `SearchSession`.
+2.  **`review_manager`:** Review Manager Dashboard, creation and listing of `SearchSession` objects. **Contains the SearchSession model** with future-proof collaboration fields for Phase 2.
+3.  **`search_strategy`:** Definition and management of search strategies (PIC framework, parameters) within a `SearchSession` (imports model from review_manager).
 4.  **`serp_execution`:** Handles the execution of search queries against the Serper API via Celery tasks, tracks `SearchExecution` status, and stores `RawSearchResult`.
 5.  **`results_manager`:** Processes `RawSearchResult` into `ProcessedResult`, including normalization and basic deduplication.
 6.  **`review_results`:** Interface for reviewing `ProcessedResult`, applying `ReviewTag` (Include, Exclude, Maybe), and adding `Note` objects.
 7.  **`reporting`:** Generates reports, PRISMA flow statistics, and data export (CSV, JSON, PDF).
 
-Each app will follow the standard Django app structure outlined in [`PRD-D.md`](PRD-D.md:99) Section 3.4 (models, views, forms, templates, urls, tests, etc.).
+Each app will follow the standard Django app structure outlined in [`PRD.md`](PRD.md) Section 3.4 (models, views, forms, templates, urls, tests, etc.).
 
 ### 5.3. Deployment View (Conceptual)
-Phase 1 deployment will utilize Docker for containerization ([`PRD-D.md`](PRD-D.md:289)):
+Phase 1 deployment will utilize Docker for containerization ([`PRD.md`](PRD.md)):
 -   A Docker container for the Django web application (running with Gunicorn or Uvicorn).
 -   A Docker container for Celery worker(s).
 -   A Docker container for the Celery Beat scheduler (if needed).
@@ -128,13 +128,13 @@ Phase 1 deployment will utilize Docker for containerization ([`PRD-D.md`](PRD-D.
 ## 6. Data Architecture
 
 ### 6.1. Database
-PostgreSQL will be used as the relational database, managed via the Django ORM ([`PRD-D.md`](PRD-D.md:35), [`PRD-D.md`](PRD-D.md:123)).
+PostgreSQL will be used as the relational database, managed via the Django ORM ([`PRD.md`](PRD.md)).
 
 ### 6.2. ORM
 The Django Object-Relational Mapper (ORM) will be used for all database interactions, simplifying data access and ensuring database-agnostic query construction where possible. Django's migration system will manage schema changes.
 
 ### 6.3. Core Entities & Relationships
-The core data model for Phase 1 (designed to support both phases) includes the following entities, as detailed in [`PRD-D.md`](PRD-D.md:123) Section 3.4. `db_table_comment` and `db_comment` will be utilized on models and fields respectively for clarity.
+The core data model for Phase 1 (designed to support both phases) includes the following entities, as detailed in [`PRD.md`](PRD.md) Section 3.4. `db_table_comment` and `db_comment` will be utilized on models and fields respectively for clarity.
 
 ```mermaid
 erDiagram
@@ -153,16 +153,19 @@ erDiagram
 
     SearchSession {
         int id PK "db_comment: Primary key"
-        int user_id FK "db_comment: Foreign key to User"
+        int created_by_id FK "db_comment: Foreign key to User who created session"
+        int lead_reviewer_id FK "db_comment: Foreign key to User (current lead reviewer)"
         string title "db_comment: Title of the search session"
         string description "db_comment: Description of the search session"
         string population_terms "db_comment: PIC - Population terms"
         string interest_terms "db_comment: PIC - Interest terms"
         string context_terms "db_comment: PIC - Context terms"
-        string status "db_comment: e.g., Draft, In Progress, Completed"
+        string status "db_comment: 9-state workflow: draft, strategy_ready, executing, processing, ready_for_review, in_review, completed, failed, archived"
+        bool is_collaborative "db_comment: Phase 2 - Whether session allows multiple reviewers"
+        datetime review_deadline "db_comment: Phase 2 - Optional deadline for collaborative review"
         datetime created_at "db_comment: Timestamp of creation"
         datetime updated_at "db_comment: Timestamp of last update"
-        "db_table_comment: Represents a review session with its search strategy"
+        "db_table_comment: Represents a review session with search strategy and Phase 2 collaboration support"
     }
 
     SearchQuery {
@@ -243,7 +246,22 @@ erDiagram
         "db_table_comment: Stores notes added to results"
     }
 
+    SessionCollaborator {
+        int id PK "db_comment: Primary key"
+        int session_id FK "db_comment: Foreign key to SearchSession"
+        int user_id FK "db_comment: Foreign key to User (collaborator)"
+        int invited_by_id FK "db_comment: Foreign key to User (who sent invitation)"
+        string role "db_comment: Phase 2 - viewer, reviewer, editor, lead"
+        datetime invited_at "db_comment: When invitation was sent"
+        datetime accepted_at "db_comment: When invitation was accepted (null = pending)"
+        "db_table_comment: Phase 2 - Collaboration relationships for review sessions"
+    }
+
     User ||--o{ SearchSession : "creates"
+    User ||--o{ SearchSession : "leads"
+    SearchSession ||--o{ SessionCollaborator : "has_collaborators"
+    User ||--o{ SessionCollaborator : "collaborates_on"
+    User ||--o{ SessionCollaborator : "invites_to"
     SearchSession ||--o{ SearchQuery : "contains"
     SearchQuery ||--o{ SearchExecution : "executes"
     SearchExecution ||--o{ RawSearchResult : "yields"
@@ -268,7 +286,7 @@ erDiagram
 
 ## 7. Key Component Design & Data Flow
 
-This section elaborates on the architectural aspects of core features outlined in [`PRD-D.md`](PRD-D.md:138) Section 4.
+This section elaborates on the architectural aspects of core features outlined in [`PRD.md`](PRD.md) Section 4.
 
 ### 7.1. Authentication (`accounts` app)
 -   **Implementation:** Leverages Django's built-in authentication system (`django.contrib.auth`).
@@ -277,12 +295,16 @@ This section elaborates on the architectural aspects of core features outlined i
 -   **Templates:** Custom HTML templates for login, signup, and profile pages.
 
 ### 7.2. Review Manager Dashboard (`review_manager` app)
--   **View:** A Class-Based View (e.g., `ListView` or a custom `TemplateView`) to display `SearchSession` objects belonging to the logged-in user.
+-   **Views:** Multiple Class-Based Views for comprehensive session management:
+    -   `DashboardView`: Main landing page with session cards grouped by status
+    -   `SessionCreateView`: Two-step creation (minimal → redirect to strategy)
+    -   `SessionDetailView`, `SessionUpdateView`, `SessionDeleteView`: Full CRUD operations
+-   **Smart Navigation:** Sessions route users to next logical step based on 9-state status workflow
 -   **Data Flow:**
-    1.  User navigates to dashboard.
-    2.  View queries `SearchSession` model, filtered by `request.user`.
-    3.  Sessions are displayed, potentially grouped by status.
-    4.  A Django `Form` (likely a `ModelForm` for `SearchSession`) allows creation of new sessions.
+    1.  User navigates to dashboard with optimised queries (select_related, prefetch_related)
+    2.  Sessions displayed in responsive card layout grouped by Active, Completed, Failed
+    3.  Session creation: minimal form (title + description) → immediate redirect to search strategy
+    4.  Session management: delete drafts only, archive completed sessions, duplicate any session
 
 ### 7.3. Search Strategy (`search_strategy` app)
 -   **View:** A view (CBV or function-based) to handle creation and editing of search strategy details within a `SearchSession`.
@@ -342,12 +364,12 @@ This section elaborates on the architectural aspects of core features outlined i
 ### 8.1. Serper API (Google Search)
 -   **Responsibility:** `serp_execution` app's Celery tasks.
 -   **Method:** HTTP GET requests using the Python `requests` library.
--   **Authentication:** API key managed via environment variables and accessed through Django settings ([`PRD-D.md`](PRD-D.md:295)).
+-   **Authentication:** API key managed via environment variables and accessed through Django settings ([`PRD.md`](PRD.md)).
 -   **Error Handling:** Robust error handling for API call failures, rate limits, etc.
--   **Circuit Breaker Consideration:** To prevent repeated calls to a failing Serper API, a circuit breaker mechanism (e.g., using a library like `pybreaker` within Celery tasks) will be evaluated. If the circuit is open, tasks may be re-queued with a delay, or the `SearchExecution` status updated to reflect the condition, allowing for more resilient interaction with this external dependency.
+-   **Circuit Breaker Consideration (Phase 2):** To prevent repeated calls to a failing Serper API, a circuit breaker mechanism (e.g., using a library like `pybreaker` within Celery tasks) will be considered for Phase 2. For Phase 1, basic error handling and retry logic will be implemented.
 
 ### 8.2. Celery (Background Tasks)
--   **Broker:** Redis or RabbitMQ, configured in Django settings ([`PRD-D.md`](PRD-D.md:37)).
+-   **Broker:** Redis, configured in Django settings ([`PRD.md`](PRD.md)).
 -   **Key Tasks:**
     -   `perform_serp_query_task` (in `serp_execution`): Fetches search results.
     -   `process_session_results_task` (in `results_manager`): Processes raw results.
@@ -420,7 +442,7 @@ To ensure consistency and maintainability across the "Thesis Grey" codebase, the
 
 ## 10. Future Considerations (Phase 2 Preview)
 
-The current architecture is designed with Phase 2 expansions in mind ([`PRD-D.md`](PRD-D.md:301) Section 6):
+The current architecture is designed with Phase 2 expansions in mind ([`PRD.md`](PRD.md) Section 6):
 -   **REST API Development:** The modular app structure and Django ORM will facilitate the addition of a REST API using Django REST Framework for decoupled frontends or third-party integrations.
 -   **Advanced Features:** Enhancements to search strategy, results management, review collaboration, and reporting can be built upon the existing app structures.
 
@@ -428,4 +450,4 @@ The current architecture is designed with Phase 2 expansions in mind ([`PRD-D.md
 
 | Version | Date       | Author(s)      | Changes                                      |
 |---------|------------|----------------|----------------------------------------------|
-| 1.0     | 2025-05-26 | BMAD Architect | Initial draft based on PRD-D.md Version 1.0. |
+| 1.0     | 2025-05-26 | BMAD Architect | Initial draft based on PRD.md Version 1.0. |
