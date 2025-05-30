@@ -109,7 +109,14 @@ AUTH_USER_MODEL = 'accounts.User'
 
 # Login URLs
 LOGIN_URL = 'accounts:login'
-LOGIN_REDIRECT_URL = 'accounts:profile' # Default redirect after login
+LOGIN_REDIRECT_URL = 'review_manager:dashboard' # Default redirect after login
+LOGOUT_REDIRECT_URL = 'accounts:login'
+
+# Session configuration for "remember me" functionality
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_COOKIE_HTTPONLY = True
 
 
 # Password validation
@@ -152,7 +159,11 @@ DEFAULT_FROM_EMAIL = 'webmaster@localhost' # Or your preferred default from emai
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

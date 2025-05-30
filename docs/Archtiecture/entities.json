@@ -19,6 +19,357 @@
         "updated_at": "DateTimeField (auto_now)",
         "custom_methods": ["get_full_name", "save"]
       },
+    {
+      "id": "model:review_manager.SessionStatusHistory",
+      "type": "Model",
+      "name": "SessionStatusHistory",
+      "app": "review_manager",
+      "parent_class": "django.db.models.Model",
+      "attributes": {
+        "id": "AutoField (Primary Key)",
+        "session": "ForeignKey (to review_manager.SearchSession)",
+        "from_status": "CharField (choices: SearchSession.Status, blank)",
+        "to_status": "CharField (choices: SearchSession.Status)",
+        "changed_by": "ForeignKey (to settings.AUTH_USER_MODEL)",
+        "changed_at": "DateTimeField (auto_now_add)",
+        "reason": "TextField (blank)",
+        "metadata": "JSONField (default=dict, blank)",
+        "ip_address": "GenericIPAddressField (null, blank)",
+        "duration_in_previous_status": "DurationField (null, blank)",
+        "custom_methods": ["__str__", "get_transition_display", "is_progression", "is_regression", "is_error_recovery"]
+      },
+      "description": "Model to track detailed history of all status changes for audit purposes."
+    },
+    {
+      "id": "model:review_manager.SessionArchive",
+      "type": "Model",
+      "name": "SessionArchive",
+      "app": "review_manager",
+      "parent_class": "django.db.models.Model",
+      "attributes": {
+        "id": "AutoField (Primary Key)",
+        "session": "OneToOneField (to review_manager.SearchSession)",
+        "archived_by": "ForeignKey (to settings.AUTH_USER_MODEL)",
+        "archived_at": "DateTimeField (auto_now_add)",
+        "archive_reason": "TextField (blank)",
+        "stats_snapshot": "JSONField (default=dict)",
+        "restored_at": "DateTimeField (null, blank)",
+        "restored_by": "ForeignKey (to settings.AUTH_USER_MODEL, null, blank)",
+        "custom_methods": ["__str__", "is_currently_archived", "days_archived"]
+      },
+      "description": "Model to track archiving operations for completed sessions."
+    },
+    {
+      "id": "model:review_manager.UserSessionStats",
+      "type": "Model",
+      "name": "UserSessionStats",
+      "app": "review_manager",
+      "parent_class": "django.db.models.Model",
+      "attributes": {
+        "id": "AutoField (Primary Key)",
+        "user": "OneToOneField (to settings.AUTH_USER_MODEL)",
+        "total_sessions": "PositiveIntegerField (default=0)",
+        "completed_sessions": "PositiveIntegerField (default=0)",
+        "archived_sessions": "PositiveIntegerField (default=0)",
+        "failed_sessions": "PositiveIntegerField (default=0)",
+        "avg_completion_time": "DurationField (null, blank)",
+        "fastest_completion": "DurationField (null, blank)",
+        "total_activities": "PositiveIntegerField (default=0)",
+        "last_activity_date": "DateTimeField (null, blank)",
+        "most_active_day": "CharField (blank)",
+        "most_active_hour": "PositiveSmallIntegerField (null, blank)",
+        "completion_rate": "FloatField (default=0.0)",
+        "productivity_score": "FloatField (default=0.0)",
+        "stats_calculated_at": "DateTimeField (auto_now)",
+        "calculation_metadata": "JSONField (default=dict, blank)",
+        "custom_methods": ["__str__", "calculate_completion_rate", "calculate_productivity_score", "update_user_stats"]
+      },
+      "description": "Model to track user-level statistics and productivity metrics."
+    },
+    {
+      "id": "class:review_manager.StatusChangeSignalHandler",
+      "type": "Class",
+      "name": "StatusChangeSignalHandler",
+      "app": "review_manager",
+      "parent_class": "object",
+      "methods": [
+        "get_client_ip",
+        "pre_save_session",
+        "post_save_session",
+        "_handle_session_creation",
+        "_handle_session_update",
+        "_handle_status_change",
+        "_handle_general_update",
+        "_get_transition_type",
+        "_get_transition_description",
+        "_handle_special_transitions",
+        "_handle_archiving",
+        "_handle_completion",
+        "_handle_archive_restoration",
+        "_handle_failure",
+        "_update_user_statistics"
+      ],
+      "description": "Handles all status change events with comprehensive tracking and validation."
+    },
+    {
+      "id": "class:review_manager.SignalUtils",
+      "type": "Class",
+      "name": "SignalUtils",
+      "app": "review_manager",
+      "parent_class": "object",
+      "methods": [
+        "set_change_context",
+        "clear_change_context"
+      ],
+      "description": "Utility functions for signal handling context management."
+    },
+    {
+      "id": "class:review_manager.SessionChangeTrackingMiddleware",
+      "type": "Middleware",
+      "name": "SessionChangeTrackingMiddleware",
+      "app": "review_manager",
+      "parent_class": "object",
+      "methods": [
+        "__init__",
+        "__call__",
+        "get_current_request",
+        "get_current_user"
+      ],
+      "description": "Middleware to track which user is making changes to sessions."
+    },
+    {
+      "id": "view:review_manager.ActivityTimelineView",
+      "type": "View",
+      "name": "ActivityTimelineView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.DetailView",
+      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
+      "template_name": "template:review_manager/activity_timeline.html",
+      "context_object_name": "session",
+      "pk_url_kwarg": "session_id",
+      "description": "Interactive activity timeline for a session with filtering and search."
+    },
+    {
+      "id": "view:review_manager.StatusHistoryView",
+      "type": "View",
+      "name": "StatusHistoryView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.DetailView",
+      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
+      "template_name": "template:review_manager/status_history.html",
+      "context_object_name": "session",
+      "pk_url_kwarg": "session_id",
+      "description": "Detailed status history for a session showing comprehensive audit trail."
+    },
+    {
+      "id": "view:review_manager.ArchiveManagementView",
+      "type": "View",
+      "name": "ArchiveManagementView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.ListView",
+      "mixins": ["LoginRequiredMixin", "UserFeedbackMixin"],
+      "template_name": "template:review_manager/archive_management.html",
+      "context_object_name": "archived_sessions",
+      "paginate_by": 15,
+      "description": "Comprehensive archive management view with bulk operations and statistics."
+    },
+    {
+      "id": "view:review_manager.ArchiveSessionView",
+      "type": "View",
+      "name": "ArchiveSessionView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.View",
+      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
+      "description": "Archive a completed session with optional reason."
+    },
+    {
+      "id": "view:review_manager.UnarchiveSessionView",
+      "type": "View",
+      "name": "UnarchiveSessionView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.View",
+      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
+      "description": "Restore a session from archive."
+    },
+    {
+      "id": "view:review_manager.BulkArchiveView",
+      "type": "View",
+      "name": "BulkArchiveView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.View",
+      "mixins": ["LoginRequiredMixin"],
+      "description": "Bulk archive multiple completed sessions."
+    },
+    {
+      "id": "view:review_manager.StatsAnalyticsView",
+      "type": "View",
+      "name": "StatsAnalyticsView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.ListView",
+      "mixins": ["LoginRequiredMixin", "UserFeedbackMixin"],
+      "template_name": "template:review_manager/stats_analytics.html",
+      "context_object_name": "sessions",
+      "description": "Comprehensive statistics and analytics dashboard for user productivity insights."
+    },
+    {
+      "id": "function:review_manager.activity_timeline_ajax",
+      "type": "Function",
+      "name": "activity_timeline_ajax",
+      "app": "review_manager",
+      "decorators": ["login_required"],
+      "description": "Return activity timeline data as JSON for dynamic updates."
+    },
+    {
+      "id": "function:review_manager.delete_activity_ajax",
+      "type": "Function",
+      "name": "delete_activity_ajax",
+      "app": "review_manager",
+      "decorators": ["require_POST", "login_required"],
+      "description": "Delete an activity record (admin only or for corrections)."
+    },
+    {
+      "id": "function:review_manager.user_stats_ajax",
+      "type": "Function",
+      "name": "user_stats_ajax",
+      "app": "review_manager",
+      "decorators": ["login_required"],
+      "description": "Return user statistics as JSON for dashboard widgets."
+    },
+    {
+      "id": "function:review_manager.export_session_data_ajax",
+      "type": "Function",
+      "name": "export_session_data_ajax",
+      "app": "review_manager",
+      "decorators": ["require_POST", "login_required"],
+      "description": "Export session data including activity history and statistics."
+    },
+    {
+      "id": "function:review_manager.productivity_chart_data_ajax",
+      "type": "Function",
+      "name": "productivity_chart_data_ajax",
+      "app": "review_manager",
+      "decorators": ["login_required"],
+      "description": "Return productivity chart data for analytics dashboard."
+    },
+    {
+      "id": "template:review_manager/activity_timeline.html",
+      "type": "Template",
+      "name": "activity_timeline.html",
+      "path": "apps/review_manager/templates/review_manager/activity_timeline.html",
+      "description": "Interactive activity timeline template with filtering and pagination."
+    },
+    {
+      "id": "template:review_manager/status_history.html",
+      "type": "Template",
+      "name": "status_history.html",
+      "path": "apps/review_manager/templates/review_manager/status_history.html",
+      "description": "Detailed status history template showing comprehensive audit trail."
+    },
+    {
+      "id": "template:review_manager/archive_management.html",
+      "type": "Template",
+      "name": "archive_management.html",
+      "path": "apps/review_manager/templates/review_manager/archive_management.html",
+      "description": "Archive management template with search, filtering, and bulk operations."
+    },
+    {
+      "id": "template:review_manager/stats_analytics.html",
+      "type": "Template",
+      "name": "stats_analytics.html",
+      "path": "apps/review_manager/templates/review_manager/stats_analytics.html",
+      "description": "Comprehensive analytics dashboard template with charts and insights."
+    },
+    {
+      "id": "templatetags:review_manager_extras",
+      "type": "TemplateTags",
+      "name": "review_manager_extras",
+      "app": "review_manager",
+      "path": "apps/review_manager/templatetags/review_manager_extras.py",
+      "filters": [
+        "duration_display",
+        "duration_short",
+        "percentage",
+        "status_class",
+        "activity_icon",
+        "get_item",
+        "multiply",
+        "format_number"
+      ],
+      "tags": [
+        "transition_arrow"
+      ],
+      "description": "Custom template tags and filters for Review Manager."
+    },
+    {
+      "id": "url:/review/<int:session_id>/timeline/",
+      "type": "URL",
+      "name": "review_manager:activity_timeline",
+      "path_pattern": "/review/<int:session_id>/timeline/",
+      "description": "URL for activity timeline view."
+    },
+    {
+      "id": "url:/review/<int:session_id>/history/",
+      "type": "URL",
+      "name": "review_manager:status_history",
+      "path_pattern": "/review/<int:session_id>/history/",
+      "description": "URL for status history view."
+    },
+    {
+      "id": "url:/review/archives/",
+      "type": "URL",
+      "name": "review_manager:archive_management",
+      "path_pattern": "/review/archives/",
+      "description": "URL for archive management view."
+    },
+    {
+      "id": "url:/review/<int:session_id>/archive/",
+      "type": "URL",
+      "name": "review_manager:archive_session",
+      "path_pattern": "/review/<int:session_id>/archive/",
+      "description": "URL for archiving a session."
+    },
+    {
+      "id": "url:/review/<int:session_id>/unarchive/",
+      "type": "URL",
+      "name": "review_manager:unarchive_session",
+      "path_pattern": "/review/<int:session_id>/unarchive/",
+      "description": "URL for unarchiving a session."
+    },
+    {
+      "id": "url:/review/bulk-archive/",
+      "type": "URL",
+      "name": "review_manager:bulk_archive",
+      "path_pattern": "/review/bulk-archive/",
+      "description": "URL for bulk archive operations."
+    },
+    {
+      "id": "url:/review/analytics/",
+      "type": "URL",
+      "name": "review_manager:stats_analytics",
+      "path_pattern": "/review/analytics/",
+      "description": "URL for analytics dashboard."
+    },
+    {
+      "id": "css:review_manager/css/base.css",
+      "type": "CSS",
+      "name": "base.css",
+      "path": "apps/review_manager/static/review_manager/css/base.css",
+      "description": "Base CSS styles for Review Manager with Sprint 6 advanced styling."
+    },
+    {
+      "id": "css:review_manager/css/timeline.css",
+      "type": "CSS",
+      "name": "timeline.css",
+      "path": "apps/review_manager/static/review_manager/css/timeline.css",
+      "description": "Specific CSS styles for activity timeline."
+    },
+    {
+      "id": "css:review_manager/css/status-history.css",
+      "type": "CSS",
+      "name": "status-history.css",
+      "path": "apps/review_manager/static/review_manager/css/status-history.css",
+      "description": "Specific CSS styles for status history views."
+    },
       "description": "Custom User model for Thesis Grey researchers."
     },
     {

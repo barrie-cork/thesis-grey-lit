@@ -40,6 +40,82 @@
     { "source": "view:review_manager.session_create_view", "target": "form:review_manager.SessionCreateForm", "type": "USES_FORM" },
     { "source": "view:review_manager.session_create_view", "target": "template:review_manager/session_create.html", "type": "RENDERS_TEMPLATE" },
     { "source": "view:review_manager.session_create_view", "target": "url:search_strategy:define", "type": "REDIRECTS_TO_URL_NAME", "via": "search_strategy:define", "comment": "Target URL entity is a placeholder as search_strategy app is not yet defined." },
-    { "source": "url:/review_manager/create/", "target": "view:review_manager.session_create_view", "type": "ROUTES_TO_VIEW" }
+    { "source": "url:/review_manager/create/", "target": "view:review_manager.session_create_view", "type": "ROUTES_TO_VIEW" },
+    
+    // Sprint 6: Advanced Features Relations
+    { "source": "model:review_manager.SessionStatusHistory", "target": "model:review_manager.SearchSession", "type": "FOREIGN_KEY", "field_name": "session" },
+    { "source": "model:review_manager.SessionStatusHistory", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "changed_by" },
+    { "source": "model:review_manager.SessionArchive", "target": "model:review_manager.SearchSession", "type": "ONE_TO_ONE", "field_name": "session" },
+    { "source": "model:review_manager.SessionArchive", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "archived_by" },
+    { "source": "model:review_manager.SessionArchive", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "restored_by" },
+    { "source": "model:review_manager.UserSessionStats", "target": "model:accounts.User", "type": "ONE_TO_ONE", "field_name": "user" },
+    
+    // Signal Handler Relations
+    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.SearchSession", "type": "HANDLES_SIGNALS_FOR" },
+    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.SessionStatusHistory", "type": "CREATES_MODEL_INSTANCE" },
+    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.SessionActivity", "type": "CREATES_MODEL_INSTANCE" },
+    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.SessionArchive", "type": "CREATES_MODEL_INSTANCE" },
+    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.UserSessionStats", "type": "UPDATES_MODEL_INSTANCE" },
+    { "source": "class:review_manager.SignalUtils", "target": "class:review_manager.StatusChangeSignalHandler", "type": "PROVIDES_UTILITIES_FOR" },
+    { "source": "class:review_manager.SessionChangeTrackingMiddleware", "target": "class:review_manager.StatusChangeSignalHandler", "type": "PROVIDES_CONTEXT_FOR" },
+    
+    // View Relations
+    { "source": "view:review_manager.ActivityTimelineView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
+    { "source": "view:review_manager.ActivityTimelineView", "target": "model:review_manager.SessionActivity", "type": "QUERIES_MODEL" },
+    { "source": "view:review_manager.ActivityTimelineView", "target": "template:review_manager/activity_timeline.html", "type": "RENDERS_TEMPLATE" },
+    { "source": "view:review_manager.StatusHistoryView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
+    { "source": "view:review_manager.StatusHistoryView", "target": "model:review_manager.SessionStatusHistory", "type": "QUERIES_MODEL" },
+    { "source": "view:review_manager.StatusHistoryView", "target": "template:review_manager/status_history.html", "type": "RENDERS_TEMPLATE" },
+    { "source": "view:review_manager.ArchiveManagementView", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
+    { "source": "view:review_manager.ArchiveManagementView", "target": "model:review_manager.SessionArchive", "type": "QUERIES_MODEL" },
+    { "source": "view:review_manager.ArchiveManagementView", "target": "template:review_manager/archive_management.html", "type": "RENDERS_TEMPLATE" },
+    { "source": "view:review_manager.ArchiveSessionView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
+    { "source": "view:review_manager.ArchiveSessionView", "target": "class:review_manager.SignalUtils", "type": "USES_UTILITY" },
+    { "source": "view:review_manager.UnarchiveSessionView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
+    { "source": "view:review_manager.UnarchiveSessionView", "target": "class:review_manager.SignalUtils", "type": "USES_UTILITY" },
+    { "source": "view:review_manager.BulkArchiveView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
+    { "source": "view:review_manager.BulkArchiveView", "target": "class:review_manager.SignalUtils", "type": "USES_UTILITY" },
+    { "source": "view:review_manager.StatsAnalyticsView", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
+    { "source": "view:review_manager.StatsAnalyticsView", "target": "model:review_manager.UserSessionStats", "type": "QUERIES_MODEL" },
+    { "source": "view:review_manager.StatsAnalyticsView", "target": "template:review_manager/stats_analytics.html", "type": "RENDERS_TEMPLATE" },
+    
+    // AJAX Function Relations
+    { "source": "function:review_manager.activity_timeline_ajax", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
+    { "source": "function:review_manager.activity_timeline_ajax", "target": "model:review_manager.SessionActivity", "type": "QUERIES_MODEL" },
+    { "source": "function:review_manager.delete_activity_ajax", "target": "model:review_manager.SessionActivity", "type": "MANAGES_MODEL_INSTANCE" },
+    { "source": "function:review_manager.user_stats_ajax", "target": "model:review_manager.UserSessionStats", "type": "QUERIES_MODEL" },
+    { "source": "function:review_manager.user_stats_ajax", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
+    { "source": "function:review_manager.export_session_data_ajax", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
+    { "source": "function:review_manager.export_session_data_ajax", "target": "model:review_manager.SessionActivity", "type": "QUERIES_MODEL" },
+    { "source": "function:review_manager.export_session_data_ajax", "target": "model:review_manager.SessionStatusHistory", "type": "QUERIES_MODEL" },
+    { "source": "function:review_manager.productivity_chart_data_ajax", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
+    
+    // Template Relations
+    { "source": "template:review_manager/activity_timeline.html", "target": "templatetags:review_manager_extras", "type": "USES_TEMPLATE_TAGS" },
+    { "source": "template:review_manager/status_history.html", "target": "templatetags:review_manager_extras", "type": "USES_TEMPLATE_TAGS" },
+    { "source": "template:review_manager/archive_management.html", "target": "templatetags:review_manager_extras", "type": "USES_TEMPLATE_TAGS" },
+    { "source": "template:review_manager/stats_analytics.html", "target": "templatetags:review_manager_extras", "type": "USES_TEMPLATE_TAGS" },
+    { "source": "template:review_manager/activity_timeline.html", "target": "css:review_manager/css/timeline.css", "type": "INCLUDES_CSS" },
+    { "source": "template:review_manager/status_history.html", "target": "css:review_manager/css/status-history.css", "type": "INCLUDES_CSS" },
+    { "source": "template:review_manager/activity_timeline.html", "target": "css:review_manager/css/base.css", "type": "INCLUDES_CSS" },
+    { "source": "template:review_manager/status_history.html", "target": "css:review_manager/css/base.css", "type": "INCLUDES_CSS" },
+    { "source": "template:review_manager/archive_management.html", "target": "css:review_manager/css/base.css", "type": "INCLUDES_CSS" },
+    { "source": "template:review_manager/stats_analytics.html", "target": "css:review_manager/css/base.css", "type": "INCLUDES_CSS" },
+    
+    // URL to View Relations
+    { "source": "url:/review/<int:session_id>/timeline/", "target": "view:review_manager.ActivityTimelineView", "type": "ROUTES_TO_VIEW" },
+    { "source": "url:/review/<int:session_id>/history/", "target": "view:review_manager.StatusHistoryView", "type": "ROUTES_TO_VIEW" },
+    { "source": "url:/review/archives/", "target": "view:review_manager.ArchiveManagementView", "type": "ROUTES_TO_VIEW" },
+    { "source": "url:/review/<int:session_id>/archive/", "target": "view:review_manager.ArchiveSessionView", "type": "ROUTES_TO_VIEW" },
+    { "source": "url:/review/<int:session_id>/unarchive/", "target": "view:review_manager.UnarchiveSessionView", "type": "ROUTES_TO_VIEW" },
+    { "source": "url:/review/bulk-archive/", "target": "view:review_manager.BulkArchiveView", "type": "ROUTES_TO_VIEW" },
+    { "source": "url:/review/analytics/", "target": "view:review_manager.StatsAnalyticsView", "type": "ROUTES_TO_VIEW" },
+    
+    // Cross-view Navigation Relations
+    { "source": "view:review_manager.ActivityTimelineView", "target": "view:review_manager.StatusHistoryView", "type": "PROVIDES_NAVIGATION_TO" },
+    { "source": "view:review_manager.StatusHistoryView", "target": "view:review_manager.ActivityTimelineView", "type": "PROVIDES_NAVIGATION_TO" },
+    { "source": "view:review_manager.ArchiveSessionView", "target": "view:review_manager.DashboardView", "type": "REDIRECTS_TO_URL_NAME", "via": "review_manager:dashboard" },
+    { "source": "view:review_manager.UnarchiveSessionView", "target": "view:review_manager.SessionDetailView", "type": "REDIRECTS_TO_URL_NAME", "via": "review_manager:session_detail" },
+    { "source": "view:review_manager.BulkArchiveView", "target": "view:review_manager.DashboardView", "type": "REDIRECTS_TO_URL_NAME", "via": "review_manager:dashboard" }
   ]
 }

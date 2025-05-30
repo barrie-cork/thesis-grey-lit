@@ -1,0 +1,229 @@
+{% extends "review_manager/base.html" %}
+{% load static %}
+{% load review_manager_extras %}
+
+{% block title %}Activity Timeline - {{ session.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'review_manager/css/timeline.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="timeline-container">
+    <!-- Header Section -->
+    <div class="timeline-header">
+        <div class="header-content">
+            <h1>
+                <i class="icon-timeline"></i>
+                Activity Timeline
+            </h1>
+            <h2 class="session-title">{{ session.title }}</h2>
+            <p class="session-description">{{ session.description|truncatewords:20 }}</p>
+        </div>
+        
+        <div class="header-actions">
+            <a href="{% url 'review_manager:session_detail' session.id %}" 
+               class="btn btn-outline-secondary">
+                <i class="icon-arrow-left"></i> Back to Session
+            </a>
+            <a href="{% url 'review_manager:status_history' session.id %}" 
+               class="btn btn-outline-primary">
+                <i class="icon-history"></i> Status History
+            </a>
+        </div>
+    </div>
+    
+    <!-- Statistics Section -->
+    <div class="timeline-stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ activity_stats.total_activities }}</div>
+            <div class="stat-label">Total Activities</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ activity_stats.status_changes }}</div>
+            <div class="stat-label">Status Changes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">
+                {% if activity_stats.recent_activity %}
+                    {{ activity_stats.recent_activity.performed_at|timesince }} ago
+                {% else %}
+                    No activity
+                {% endif %}
+            </div>
+            <div class="stat-label">Last Activity</div>
+        </div>
+    </div>
+    
+    <!-- Filters Section -->
+    <div class="timeline-filters">
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <label for="activity_type">Activity Type:</label>
+                <select name="activity_type" id="activity_type" class="form-control" onchange="this.form.submit()">
+                    <option value="all" {% if current_activity_filter == 'all' %}selected{% endif %}>All Activities</option>
+                    {% for type_value, type_label in activity_types %}
+                        <option value="{{ type_value }}" 
+                                {% if current_activity_filter == type_value %}selected{% endif %}>
+                            {{ type_label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="date_range">Date Range:</label>
+                <select name="date_range" id="date_range" class="form-control" onchange="this.form.submit()">
+                    <option value="all" {% if current_date_filter == 'all' %}selected{% endif %}>All Time</option>
+                    <option value="today" {% if current_date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if current_date_filter == 'week' %}selected{% endif %}>Last Week</option>
+                    <option value="month" {% if current_date_filter == 'month' %}selected{% endif %}>Last Month</option>
+                </select>
+            </div>
+            
+            {% if current_activity_filter != 'all' or current_date_filter != 'all' %}
+            <div class="filter-group">
+                <a href="{% url 'review_manager:activity_timeline' session.id %}" class="btn btn-link">
+                    Clear Filters
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Timeline Section -->
+    <div class="timeline-content">
+        {% if activities %}
+            <div class="timeline">
+                {% for activity in activities %}
+                <div class="timeline-item" data-activity-type="{{ activity.activity_type }}">
+                    <div class="timeline-marker">
+                        <i class="activity-icon icon-{{ activity.activity_type|lower }}"></i>
+                    </div>
+                    
+                    <div class="timeline-content-item">
+                        <div class="timeline-header">
+                            <h4 class="activity-title">{{ activity.get_activity_type_display }}</h4>
+                            <div class="activity-meta">
+                                <span class="activity-user">
+                                    <i class="icon-user"></i> {{ activity.performed_by.username }}
+                                </span>
+                                <span class="activity-time">
+                                    <i class="icon-clock"></i> 
+                                    <time datetime="{{ activity.performed_at|date:'c' }}" 
+                                          title="{{ activity.performed_at }}">
+                                        {{ activity.performed_at|timesince }} ago
+                                    </time>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-body">
+                            <p class="activity-description">{{ activity.description }}</p>
+                            
+                            {% if activity.old_status and activity.new_status %}
+                            <div class="status-change">
+                                <span class="status-badge status-{{ activity.old_status }}">{{ activity.get_old_status_display }}</span>
+                                <i class="icon-arrow-right"></i>
+                                <span class="status-badge status-{{ activity.new_status }}">{{ activity.get_new_status_display }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if activity.metadata %}
+                            <details class="activity-metadata">
+                                <summary>Additional Details</summary>
+                                <pre>{{ activity.metadata|pprint }}</pre>
+                            </details>
+                            {% endif %}
+                        </div>
+                        
+                        {% if activity.activity_type in 'COMMENT,MODIFIED' and user == activity.performed_by %}
+                        <div class="timeline-actions">
+                            <button class="btn btn-sm btn-outline-danger delete-activity" 
+                                    data-activity-id="{{ activity.id }}">
+                                <i class="icon-trash"></i> Delete
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if activities.has_other_pages %}
+            <div class="pagination-container">
+                <nav aria-label="Activity timeline pagination">
+                    <ul class="pagination">
+                        {% if activities.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ activities.previous_page_number }}{% if current_activity_filter != 'all' %}&activity_type={{ current_activity_filter }}{% endif %}{% if current_date_filter != 'all' %}&date_range={{ current_date_filter }}{% endif %}">
+                                    Previous
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ activities.number }} of {{ activities.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if activities.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ activities.next_page_number }}{% if current_activity_filter != 'all' %}&activity_type={{ current_activity_filter }}{% endif %}{% if current_date_filter != 'all' %}&date_range={{ current_date_filter }}{% endif %}">
+                                    Next
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-timeline">
+                <div class="empty-timeline-icon">
+                    <i class="icon-timeline-empty"></i>
+                </div>
+                <h3>No Activities Found</h3>
+                <p>
+                    {% if current_activity_filter != 'all' or current_date_filter != 'all' %}
+                        No activities match your current filters. Try adjusting the filters or 
+                        <a href="{% url 'review_manager:activity_timeline' session.id %}">view all activities</a>.
+                    {% else %}
+                        This session doesn't have any recorded activities yet.
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Export Section -->
+    <div class="timeline-export">
+        <button class="btn btn-outline-primary export-timeline" 
+                data-session-id="{{ session.id }}">
+            <i class="icon-download"></i> Export Session Data
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'review_manager/js/timeline.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize timeline functionality
+        const timeline = new ActivityTimeline({
+            sessionId: {{ session.id }},
+            deleteUrl: '{% url "review_manager:delete_activity_ajax" 0 %}'.replace('0', '{id}'),
+            exportUrl: '{% url "review_manager:export_session_data_ajax" session.id %}',
+            csrfToken: '{{ csrf_token }}'
+        });
+        
+        // Auto-refresh timeline every 30 seconds
+        setInterval(() => {
+            timeline.refreshTimeline();
+        }, 30000);
+    });
+</script>
+{% endblock %}

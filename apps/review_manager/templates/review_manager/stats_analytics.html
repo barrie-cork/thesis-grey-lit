@@ -1,0 +1,408 @@
+{% extends "review_manager/base.html" %}
+{% load static %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'review_manager/css/analytics.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    <!-- Header Section -->
+    <div class="analytics-header">
+        <div class="header-content">
+            <h1>
+                <i class="icon-chart"></i>
+                Analytics Dashboard
+            </h1>
+            <p class="analytics-description">
+                Comprehensive insights into your literature review productivity and patterns.
+            </p>
+        </div>
+        
+        <div class="header-actions">
+            <a href="{% url 'review_manager:dashboard' %}" 
+               class="btn btn-outline-secondary">
+                <i class="icon-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'review_manager:archive_management' %}" 
+               class="btn btn-outline-primary">
+                <i class="icon-archive"></i> View Archives
+            </a>
+        </div>
+    </div>
+    
+    <!-- Key Metrics Overview -->
+    <div class="metrics-overview">
+        <h2>Your Productivity Overview</h2>
+        <div class="metrics-grid">
+            <div class="metric-card primary">
+                <div class="metric-icon">
+                    <i class="icon-sessions"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-number">{{ user_stats.total_sessions }}</div>
+                    <div class="metric-label">Total Sessions</div>
+                    <div class="metric-change">
+                        {% if user_stats.total_sessions > 0 %}
+                            <span class="positive">Active researcher</span>
+                        {% else %}
+                            <span class="neutral">Get started!</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="metric-card success">
+                <div class="metric-icon">
+                    <i class="icon-completed"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-number">{{ user_stats.completed_sessions }}</div>
+                    <div class="metric-label">Completed Reviews</div>
+                    <div class="metric-change">
+                        <span class="{% if user_stats.completion_rate >= 75 %}positive{% elif user_stats.completion_rate >= 50 %}neutral{% else %}negative{% endif %}">
+                            {{ user_stats.completion_rate|floatformat:1 }}% completion rate
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="metric-card info">
+                <div class="metric-icon">
+                    <i class="icon-productivity"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-number">{{ user_stats.productivity_score|floatformat:0 }}</div>
+                    <div class="metric-label">Productivity Score</div>
+                    <div class="metric-change">
+                        <span class="{% if user_stats.productivity_score >= 80 %}positive{% elif user_stats.productivity_score >= 60 %}neutral{% else %}negative{% endif %}">
+                            {% if user_stats.productivity_score >= 80 %}Excellent{% elif user_stats.productivity_score >= 60 %}Good{% else %}Improving{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="metric-card warning">
+                <div class="metric-icon">
+                    <i class="icon-activity"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-number">{{ user_stats.total_activities }}</div>
+                    <div class="metric-label">Total Activities</div>
+                    <div class="metric-change">
+                        {% if user_stats.last_activity_date %}
+                            <span class="neutral">{{ user_stats.last_activity_date|timesince }} ago</span>
+                        {% else %}
+                            <span class="negative">No activity yet</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="chart-container">
+            <h3>Session Status Distribution</h3>
+            <div class="chart-wrapper">
+                <canvas id="statusChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-legend">
+                {% for status, count in status_distribution.items %}
+                <div class="legend-item">
+                    <span class="legend-color status-{{ status }}"></span>
+                    <span class="legend-label">{{ status|capfirst }}: {{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {% if monthly_trends %}
+        <div class="chart-container">
+            <h3>Session Creation Trends</h3>
+            <div class="chart-wrapper">
+                <canvas id="trendsChart" width="400" height="200"></canvas>
+            </div>
+            <p class="chart-description">
+                Monthly session creation over the last year. Shows your research activity patterns.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Time Analysis -->
+    {% if completion_times %}
+    <div class="time-analysis">
+        <h2>Completion Time Analysis</h2>
+        <div class="time-stats">
+            <div class="time-stat">
+                <div class="stat-number">
+                    {% if user_stats.avg_completion_time %}
+                        {{ user_stats.avg_completion_time.days }} days
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+                <div class="stat-label">Average Completion Time</div>
+            </div>
+            <div class="time-stat">
+                <div class="stat-number">
+                    {% if user_stats.fastest_completion %}
+                        {{ user_stats.fastest_completion.days }} days
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+                <div class="stat-label">Fastest Completion</div>
+            </div>
+            <div class="time-stat">
+                <div class="stat-number">{{ completion_times|length }}</div>
+                <div class="stat-label">Completed Sessions</div>
+            </div>
+        </div>
+        
+        <div class="completion-timeline">
+            <h4>Recent Completions</h4>
+            {% for item in completion_times|slice:":5" %}
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    <strong>{{ item.session.title }}</strong>
+                    <span class="timeline-duration">{{ item.days }} days</span>
+                </div>
+                <div class="timeline-date">{{ item.session.completed_date|date:"M d, Y" }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Activity Patterns -->
+    {% if activity_by_hour or activity_by_day %}
+    <div class="activity-patterns">
+        <h2>Activity Patterns</h2>
+        <div class="patterns-grid">
+            {% if activity_by_hour %}
+            <div class="pattern-card">
+                <h4>Activity by Hour</h4>
+                <div class="hour-chart">
+                    {% for hour in "012345678901234567890123"|make_list %}
+                    <div class="hour-bar" 
+                         style="height: 20px"
+                         title="Hour {{ forloop.counter0 }}: 0 activities">
+                        <span class="hour-label">{{ forloop.counter0 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="pattern-insight">
+                    {% if user_stats.most_active_hour %}
+                        You're most active at {{ user_stats.most_active_hour }}:00
+                    {% else %}
+                        No clear pattern yet
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+            
+            {% if activity_by_day %}
+            <div class="pattern-card">
+                <h4>Activity by Day of Week</h4>
+                <div class="day-chart">
+                    <div class="day-bar" style="height: 30px" title="Monday: 0 activities">
+                        <span class="day-label">Mon</span>
+                    </div>
+                    <div class="day-bar" style="height: 40px" title="Tuesday: 0 activities">
+                        <span class="day-label">Tue</span>
+                    </div>
+                    <div class="day-bar" style="height: 25px" title="Wednesday: 0 activities">
+                        <span class="day-label">Wed</span>
+                    </div>
+                    <div class="day-bar" style="height: 35px" title="Thursday: 0 activities">
+                        <span class="day-label">Thu</span>
+                    </div>
+                    <div class="day-bar" style="height: 50px" title="Friday: 0 activities">
+                        <span class="day-label">Fri</span>
+                    </div>
+                    <div class="day-bar" style="height: 20px" title="Saturday: 0 activities">
+                        <span class="day-label">Sat</span>
+                    </div>
+                    <div class="day-bar" style="height: 15px" title="Sunday: 0 activities">
+                        <span class="day-label">Sun</span>
+                    </div>
+                </div>
+                <p class="pattern-insight">
+                    {% if user_stats.most_active_day %}
+                        You're most active on {{ user_stats.most_active_day }}s
+                    {% else %}
+                        No clear pattern yet
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Achievements -->
+    {% if achievements %}
+    <div class="achievements-section">
+        <h2>Your Achievements</h2>
+        <div class="achievements-grid">
+            {% for achievement in achievements %}
+            <div class="achievement-card {{ achievement.class }}">
+                <div class="achievement-icon">
+                    <i class="{{ achievement.icon }}"></i>
+                </div>
+                <div class="achievement-content">
+                    <h4>{{ achievement.title }}</h4>
+                    <p>{{ achievement.description }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recommendations -->
+    {% if recommendations %}
+    <div class="recommendations-section">
+        <h2>Recommendations for You</h2>
+        <div class="recommendations-list">
+            {% for rec in recommendations %}
+            <div class="recommendation-card">
+                <div class="rec-icon">
+                    <i class="icon-lightbulb"></i>
+                </div>
+                <div class="rec-content">
+                    <h4>{{ rec.title }}</h4>
+                    <p>{{ rec.description }}</p>
+                    <a href="{{ rec.url }}" class="btn btn-sm btn-primary">
+                        {{ rec.action }}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Export Options -->
+    <div class="export-section">
+        <h2>Export Your Data</h2>
+        <div class="export-options">
+            <button class="btn btn-outline-primary export-btn" 
+                    data-export-type="statistics">
+                <i class="icon-download"></i> Export Statistics
+            </button>
+            <button class="btn btn-outline-secondary export-btn" 
+                    data-export-type="chart">
+                <i class="icon-image"></i> Export Charts
+            </button>
+            <button class="btn btn-outline-info export-btn" 
+                    data-export-type="report">
+                <i class="icon-file"></i> Generate Report
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart');
+    if (statusCtx) {
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    {% for status, count in status_distribution.items %}
+                    '{{ status|capfirst }}'{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [
+                        {% for status, count in status_distribution.items %}
+                        {{ count }}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        '#007bff', '#28a745', '#ffc107', '#dc3545', 
+                        '#6f42c1', '#fd7e14', '#20c997', '#6c757d'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+    
+    // Monthly Trends Chart
+    const trendsCtx = document.getElementById('trendsChart');
+    if (trendsCtx) {
+        new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: [
+                    {% for trend in monthly_trends %}
+                    '{{ trend.month|date:"M Y" }}'{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Sessions Created',
+                    data: [
+                        {% for trend in monthly_trends %}
+                        {{ trend.count }}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    ],
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    // Export functionality
+    document.querySelectorAll('.export-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const exportType = this.dataset.exportType;
+            
+            fetch(`{% url 'review_manager:productivity_chart_data_ajax' %}?export=${exportType}`)
+                .then(response => response.json())
+                .then(data => {
+                    const blob = new Blob([JSON.stringify(data, null, 2)], 
+                                        { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `analytics_${exportType}_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                })
+                .catch(error => console.error('Export failed:', error));
+        });
+    });
+});
+</script>
+{% endblock %}

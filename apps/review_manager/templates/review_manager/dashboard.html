@@ -1,211 +1,285 @@
-{% extends "base.html" %}
+<!-- Enhanced Dashboard Template with Real-time Status Monitoring -->
+{% extends 'review_manager/base.html' %}
+{% load review_manager_extras %}
 {% load static %}
 
-{% block title %}Literature Review Dashboard - Thesis Grey{% endblock %}
+{% block title %}Literature Review Dashboard{% endblock %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="{% static 'review_manager/css/dashboard.css' %}">
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'review_manager/css/status_indicators.css' %}">
+    <link rel="stylesheet" href="{% static 'review_manager/css/notifications.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <!-- Dashboard Header -->
+    <!-- Header Section with Real-time Connection Status -->
     <div class="dashboard-header">
         <div class="welcome-section">
             <h1>Your Literature Reviews</h1>
             <div class="quick-stats">
                 <span class="stat">
-                    <i class="icon-total">📊</i>
-                    <strong>{{ total_sessions }}</strong> Total
+                    <i class="icon-total"></i>
+                    <strong id="total-sessions">{{ total_sessions }}</strong> Total
                 </span>
                 <span class="stat">
-                    <i class="icon-active">⚡</i>
-                    <strong>{{ active_sessions }}</strong> Active
+                    <i class="icon-active"></i>
+                    <strong id="active-sessions">{{ active_sessions }}</strong> Active
                 </span>
                 <span class="stat">
-                    <i class="icon-completed">✅</i>
-                    <strong>{{ completed_sessions }}</strong> Completed
+                    <i class="icon-completed"></i>
+                    <strong id="completed-sessions">{{ completed_sessions }}</strong> Completed
                 </span>
             </div>
         </div>
-        <a href="{% url 'review_manager:create_session' %}" 
-           class="btn btn-primary btn-lg">
-            <i class="icon-plus">➕</i> New Review Session
-        </a>
+        <div class="header-actions">
+            <a href="{% url 'review_manager:create_session' %}" 
+               class="btn btn-primary btn-lg">
+                <i class="icon-plus"></i> New Review Session
+            </a>
+            <button type="button" 
+                    class="btn btn-outline-secondary"
+                    onclick="showNotificationPreferences()">
+                <i class="icon-settings"></i> Preferences
+            </button>
+        </div>
+    </div>
+    
+    <!-- Real-time Status Bar -->
+    <div class="status-bar">
+        <div class="connection-status" id="connection-status">
+            <span class="heartbeat-indicator" id="heartbeat"></span>
+            <span class="status-text">Connected</span>
+        </div>
+        <div class="last-updated">
+            Last updated: <span id="last-update-time">Just now</span>
+        </div>
     </div>
     
     <!-- Filters Section -->
     <div class="filters-section">
-        <form method="get" class="filter-form">
+        <form method="get" class="filter-form" id="filter-form">
             <div class="search-box">
                 <input type="text" 
                        name="q" 
                        value="{{ search_query }}"
-                       placeholder="Search sessions by title or description..."
-                       class="form-control">
+                       placeholder="Search sessions..."
+                       class="form-control"
+                       id="search-input">
+                <button type="submit" class="search-btn">
+                    <i class="icon-search"></i>
+                </button>
             </div>
             <div class="status-filter">
                 <select name="status" class="form-control" onchange="this.form.submit()">
-                    <option value="all"{% if current_filter == 'all' %} selected{% endif %}>
-                        All Sessions
-                    </option>
-                    <option value="active"{% if current_filter == 'active' %} selected{% endif %}>
+                    <option value="all">All Sessions</option>
+                    <option value="active" {% if current_filter == 'active' %}selected{% endif %}>
                         Active Only
                     </option>
-                    {% for status_key, status_label in status_choices %}
-                    <option value="{{ status_key }}"{% if current_filter == status_key %} selected{% endif %}>
-                        {{ status_label }}
+                    <option value="executing" {% if current_filter == 'executing' %}selected{% endif %}>
+                        Executing
                     </option>
-                    {% endfor %}
+                    <option value="ready_for_review" {% if current_filter == 'ready_for_review' %}selected{% endif %}>
+                        Ready for Review
+                    </option>
+                    <option value="completed" {% if current_filter == 'completed' %}selected{% endif %}>
+                        Completed
+                    </option>
+                    <option value="archived" {% if current_filter == 'archived' %}selected{% endif %}>
+                        Archived
+                    </option>
                 </select>
             </div>
             {% if search_query or current_filter != 'all' %}
             <a href="{% url 'review_manager:dashboard' %}" class="btn btn-link">
-                Clear Filters
+                <i class="icon-x"></i> Clear Filters
             </a>
             {% endif %}
         </form>
-        
-        {% if sessions %}
-        <div class="results-counter text-muted small mt-2">
-            Showing {{ sessions|length }} 
-            {% if current_filter != 'all' or search_query %}
-            of {{ total_sessions }}
-            {% endif %}
-            session{{ sessions|length|pluralize }}
-        </div>
-        {% endif %}
     </div>
     
-    <!-- Session Cards Grid -->
-    {% if sessions %}
-    <!-- Implementation Status Info -->
-    <div class="alert alert-info mb-4">
-        <h6 class="alert-heading"><i>🚧</i> Development Status - Sprint 3 Complete</h6>
-        <p class="mb-2">The Review Manager dashboard is fully functional! Other apps are coming in future sprints:</p>
-        <ul class="mb-0 small">
-            <li><strong>Sprint 4:</strong> Search Strategy definition (PIC framework)</li>
-            <li><strong>Sprint 5:</strong> SERP Execution (automated searches)</li>
-            <li><strong>Sprint 6-9:</strong> Results processing and review</li>
-            <li><strong>Sprint 10:</strong> Reporting and export</li>
-        </ul>
-    </div>
-    {% endif %}
-    
-    <div class="sessions-grid">
+    <!-- Session Cards Grid with Real-time Updates -->
+    <div class="sessions-grid" id="sessions-grid">
         {% for session in sessions %}
-        <article class="session-card" 
-                 role="article"
-                 tabindex="0"
-                 data-status="{{ session.status }}"
-                 data-session-id="{{ session.id }}"
-                 data-next-url="{{ session.nav_info.url }}"
-                 aria-label="Review session: {{ session.title }}">
+        <div class="session-card" 
+             data-session-id="{{ session.id }}"
+             data-status="{{ session.status }}"
+             onclick="navigateToSession('{{ session.id }}', '{{ session.status }}')">
             
-            <header>
-                <h3 id="session-{{ session.id }}-title">{{ session.title }}</h3>
-                <span class="status-badge status-{{ session.status }}"
-                      role="status"
-                      aria-label="Status: {{ session.get_status_display }}"
-                      data-bs-toggle="tooltip"
-                      title="{{ session.nav_info.help }}">
-                    {{ session.get_status_display }}
-                </span>
-            </header>
-            
-            <div class="card-body">
-                {% if session.description %}
-                <p id="session-{{ session.id }}-desc">{{ session.description|truncatewords:20 }}</p>
-                {% else %}
-                <p id="session-{{ session.id }}-desc" class="text-muted fst-italic">No description provided</p>
-                {% endif %}
-                
-                <dl class="card-stats">
-                    <dt class="visually-hidden">Created</dt>
-                    <dd><strong>Created:</strong> {{ session.created_at|date:"M d, Y" }}</dd>
-                    
-                    <dt class="visually-hidden">Last Updated</dt>
-                    <dd><strong>Updated:</strong> {{ session.updated_at|date:"M d, Y" }}</dd>
-                </dl>
+            <!-- Session Header with Real-time Status -->
+            <div class="session-header">
+                <h3 class="session-title">{{ session.title }}</h3>
+                <div class="status-badge-container">
+                    <span class="status-badge status-{{ session.status }} clickable" 
+                          data-session-id="{{ session.id }}"
+                          data-status="{{ session.status }}"
+                          title="{{ session.get_status_display }} - Click for details">
+                        <i class="status-icon icon-{{ session.status }}"></i>
+                        <span class="status-text">{{ session.get_status_display }}</span>
+                        <div class="status-progress" style="display: none;">
+                            <div class="progress-bar" style="width: 0%;"></div>
+                        </div>
+                    </span>
+                </div>
             </div>
             
-            <footer>
-                <a href="{{ session.nav_info.url }}" 
-                   class="action-btn {{ session.nav_info.class }}"
-                   aria-describedby="session-{{ session.id }}-title session-{{ session.id }}-desc"
-                   data-bs-toggle="tooltip"
-                   title="{{ session.nav_info.help }}">
-                    <i class="{{ session.nav_info.icon }}">🔗</i>
-                    {{ session.nav_info.text }}
-                    <span class="visually-hidden">for {{ session.title }}</span>
-                </a>
+            <!-- Session Content -->
+            <div class="session-content">
+                {% if session.description %}
+                <p class="session-description">{{ session.description|truncatewords:15 }}</p>
+                {% endif %}
                 
+                <div class="session-metadata">
+                    <div class="metadata-item">
+                        <i class="icon-calendar"></i>
+                        <span>Created {{ session.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="metadata-item">
+                        <i class="icon-clock"></i>
+                        <span>Updated {{ session.updated_at|timesince }} ago</span>
+                    </div>
+                    {% if session.population_terms or session.interest_terms %}
+                    <div class="metadata-item">
+                        <i class="icon-search"></i>
+                        <span>Strategy defined</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Progress Information for Active Sessions -->
+                {% if session.status == 'executing' or session.status == 'processing' %}
+                <div class="progress-info" id="progress-{{ session.id }}">
+                    <div class="progress-message">Processing...</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <span class="progress-percentage">0%</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Quick Stats -->
+                {% if session.status == 'ready_for_review' or session.status == 'in_review' or session.status == 'completed' %}
+                <div class="quick-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ session.processed_results_count|default:0 }}</span>
+                        <span class="stat-label">Results</span>
+                    </div>
+                    {% if session.reviewed_results_count %}
+                    <div class="stat-item">
+                        <span class="stat-number">{{ session.reviewed_results_count }}</span>
+                        <span class="stat-label">Reviewed</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Session Actions -->
+            <div class="session-actions">
+                <div class="primary-action">
+                    {% if session.status == 'draft' %}
+                        <a href="{% url 'search_strategy:define' session.id %}" class="btn btn-primary btn-sm">
+                            <i class="icon-edit"></i> Define Strategy
+                        </a>
+                    {% elif session.status == 'strategy_ready' %}
+                        <a href="{% url 'serp_execution:execute' session.id %}" class="btn btn-primary btn-sm">
+                            <i class="icon-play"></i> Execute Searches
+                        </a>
+                    {% elif session.status == 'executing' %}
+                        <a href="{% url 'serp_execution:status' session.id %}" class="btn btn-secondary btn-sm">
+                            <i class="icon-eye"></i> View Progress
+                        </a>
+                    {% elif session.status == 'processing' %}
+                        <span class="btn btn-secondary btn-sm disabled">
+                            <i class="icon-cog"></i> Processing...
+                        </span>
+                    {% elif session.status == 'ready_for_review' %}
+                        <a href="{% url 'review_results:overview' session.id %}" class="btn btn-success btn-sm">
+                            <i class="icon-check"></i> Start Review
+                        </a>
+                    {% elif session.status == 'in_review' %}
+                        <a href="{% url 'review_results:overview' session.id %}" class="btn btn-primary btn-sm">
+                            <i class="icon-arrow-right"></i> Continue Review
+                        </a>
+                    {% elif session.status == 'completed' %}
+                        <a href="{% url 'reporting:summary' session.id %}" class="btn btn-success btn-sm">
+                            <i class="icon-file-text"></i> View Report
+                        </a>
+                    {% elif session.status == 'failed' %}
+                        <button onclick="showErrorRecovery('{{ session.id }}')" class="btn btn-warning btn-sm">
+                            <i class="icon-refresh"></i> Recover
+                        </button>
+                    {% endif %}
+                </div>
+                
+                <!-- Secondary Actions Dropdown -->
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
                             type="button" 
-                            data-bs-toggle="dropdown" 
-                            aria-expanded="false"
-                            aria-label="More actions for {{ session.title }}">
-                        <i>⋮</i>
+                            data-toggle="dropdown">
+                        <i class="icon-more-horizontal"></i>
                     </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item" 
-                               href="{% url 'review_manager:session_detail' session_id=session.id %}">
-                                <i>👁️</i> View Details
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" 
-                               href="{% url 'review_manager:edit_session' session_id=session.id %}">
-                                <i>✏️</i> Edit Session
-                            </a>
-                        </li>
-                        {% if session.status != 'draft' %}
-                        <li>
-                            <a class="dropdown-item" 
-                               href="{% url 'review_manager:duplicate_session' session_id=session.id %}"
-                               onclick="return confirm('Create a copy of {{ session.title }}?')">
-                                <i>📋</i> Duplicate
-                            </a>
-                        </li>
-                        {% endif %}
-                        <li><hr class="dropdown-divider"></li>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="{% url 'review_manager:session_detail' session.id %}">
+                            <i class="icon-info"></i> View Details
+                        </a>
+                        <a class="dropdown-item" href="{% url 'review_manager:edit_session' session.id %}">
+                            <i class="icon-edit"></i> Edit
+                        </a>
+                        <a class="dropdown-item" href="{% url 'review_manager:duplicate_session' session.id %}">
+                            <i class="icon-copy"></i> Duplicate
+                        </a>
+                        <div class="dropdown-divider"></div>
                         {% if session.status == 'completed' %}
-                        <li>
-                            <button class="dropdown-item text-warning" 
-                                    onclick="archiveSession({{ session.id }}, '{{ session.title|escapejs }}')">
-                                <i>📦</i> Archive
-                            </button>
-                        </li>
+                        <a class="dropdown-item" href="{% url 'review_manager:archive_session' session.id %}">
+                            <i class="icon-archive"></i> Archive
+                        </a>
                         {% endif %}
                         {% if session.status == 'draft' %}
-                        <li>
-                            <a class="dropdown-item text-danger" 
-                               href="{% url 'review_manager:delete_session' session_id=session.id %}"
-                               onclick="return confirm('Are you sure you want to delete {{ session.title }}? This action cannot be undone.')">
-                                <i>🗑️</i> Delete
-                            </a>
-                        </li>
+                        <a class="dropdown-item text-danger" href="{% url 'review_manager:delete_session' session.id %}">
+                            <i class="icon-trash"></i> Delete
+                        </a>
                         {% endif %}
-                    </ul>
+                    </div>
                 </div>
-            </footer>
-        </article>
+            </div>
+            
+            <!-- Error Recovery Panel (hidden by default) -->
+            {% if session.status == 'failed' %}
+            <div class="error-recovery-panel" id="recovery-{{ session.id }}" style="display: none;">
+                <div class="error-message">
+                    <i class="icon-alert-triangle"></i>
+                    <span>Session encountered an error</span>
+                </div>
+                <div class="recovery-actions">
+                    <button onclick="recoverSession('{{ session.id }}', 'retry')" class="btn btn-primary btn-sm">
+                        <i class="icon-refresh"></i> Retry
+                    </button>
+                    <button onclick="recoverSession('{{ session.id }}', 'edit')" class="btn btn-secondary btn-sm">
+                        <i class="icon-edit"></i> Edit Strategy
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
         {% empty %}
         <div class="empty-state">
-            {% if search_query or current_filter != 'all' %}
-                <h3>No sessions found</h3>
-                <p>Try adjusting your search criteria or filters.</p>
-                <a href="{% url 'review_manager:dashboard' %}" class="btn btn-outline-secondary">
-                    Clear Filters
-                </a>
-            {% else %}
-                <h3>Welcome to Thesis Grey!</h3>
-                <p>You haven't created any literature review sessions yet. Create your first session to get started with systematic grey literature searching.</p>
-                <a href="{% url 'review_manager:create_session' %}" class="btn btn-primary btn-lg">
-                    <i>➕</i> Create Your First Review Session
-                </a>
+            <div class="empty-state-icon">
+                <i class="icon-inbox"></i>
+            </div>
+            <h3>No sessions found</h3>
+            <p>
+                {% if search_query or current_filter != 'all' %}
+                    No sessions match your current filters. <a href="{% url 'review_manager:dashboard' %}">View all sessions</a>
+                {% else %}
+                    Create your first literature review to get started!
+                {% endif %}
+            </p>
+            {% if not search_query and current_filter == 'all' %}
+            <a href="{% url 'review_manager:create_session' %}" class="btn btn-primary">
+                <i class="icon-plus"></i> Create Your First Session
+            </a>
             {% endif %}
         </div>
         {% endfor %}
@@ -213,131 +287,316 @@
     
     <!-- Pagination -->
     {% if is_paginated %}
-    <nav aria-label="Session pagination" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
+    <div class="pagination-container">
+        <nav aria-label="Session pagination">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" 
-                       href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_filter != 'all' %}status={{ current_filter }}&{% endif %}page=1">
-                        First
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_filter != 'all' %}&status={{ current_filter }}{% endif %}">
+                        <i class="icon-chevron-left"></i> Previous
                     </a>
                 </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                 <li class="page-item">
-                    <a class="page-link" 
-                       href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_filter != 'all' %}status={{ current_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">
-                        Previous
+                    <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_filter != 'all' %}&status={{ current_filter }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_filter != 'all' %}&status={{ current_filter }}{% endif %}">
+                        Next <i class="icon-chevron-right"></i>
                     </a>
                 </li>
-            {% endif %}
-            
-            <li class="page-item active">
-                <span class="page-link">
-                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                </span>
-            </li>
-            
-            {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" 
-                       href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_filter != 'all' %}status={{ current_filter }}&{% endif %}page={{ page_obj.next_page_number }}">
-                        Next
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" 
-                       href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if current_filter != 'all' %}status={{ current_filter }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
-                        Last
-                    </a>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
     {% endif %}
 </div>
 
-<!-- Archive Session Modal -->
-<div class="modal fade" id="archiveModal" tabindex="-1" aria-labelledby="archiveModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="archiveModalLabel">Archive Session</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Notification Container -->
+<div id="notification-container" class="notification-container position-top-right"></div>
+
+<!-- Notification Preferences Modal -->
+<div class="notification-preferences-overlay" id="preferences-overlay" style="display: none;">
+    <div class="notification-preferences" id="preferences-panel">
+        <h3>Notification Preferences</h3>
+        <form id="preferences-form">
+            <div class="notification-preferences-field">
+                <label>
+                    <input type="checkbox" id="pref-status-changes" checked>
+                    Show status change notifications
+                </label>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to archive "<span id="archiveSessionTitle"></span>"?</p>
-                <p class="text-muted small">Archived sessions are hidden from the main dashboard but can still be accessed through the archived filter.</p>
+            <div class="notification-preferences-field">
+                <label>
+                    <input type="checkbox" id="pref-error-notifications" checked>
+                    Show error notifications
+                </label>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" id="confirmArchive">Archive Session</button>
+            <div class="notification-preferences-field">
+                <label>
+                    <input type="checkbox" id="pref-success-notifications" checked>
+                    Show success notifications
+                </label>
             </div>
+            <div class="notification-preferences-field">
+                <label for="pref-auto-dismiss">Auto-dismiss duration (seconds):</label>
+                <input type="range" id="pref-auto-dismiss" min="1" max="30" value="5" step="1">
+                <span id="dismiss-duration-display">5 seconds</span>
+            </div>
+            <div class="notification-preferences-field">
+                <label for="pref-position">Notification position:</label>
+                <select id="pref-position">
+                    <option value="top-right">Top Right</option>
+                    <option value="top-left">Top Left</option>
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                </select>
+            </div>
+            <div class="notification-preferences-field">
+                <label>
+                    <input type="checkbox" id="pref-sound-enabled">
+                    Enable notification sounds
+                </label>
+            </div>
+        </form>
+        <div class="notification-preferences-actions">
+            <button type="button" onclick="hideNotificationPreferences()">Cancel</button>
+            <button type="button" class="primary" onclick="saveNotificationPreferences()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Error Recovery Modal -->
+<div class="modal" id="error-recovery-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Error Recovery</h3>
+            <button class="modal-close" onclick="hideErrorRecovery()">&times;</button>
+        </div>
+        <div class="modal-body" id="error-recovery-content">
+            <!-- Content loaded dynamically -->
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
-<script src="{% static 'review_manager/js/dashboard.js' %}"></script>
-<script>
-// Archive session functionality
-let sessionToArchive = null;
-
-function archiveSession(sessionId, sessionTitle) {
-    sessionToArchive = sessionId;
-    document.getElementById('archiveSessionTitle').textContent = sessionTitle;
-    const modal = new bootstrap.Modal(document.getElementById('archiveModal'));
-    modal.show();
-}
-
-document.getElementById('confirmArchive').addEventListener('click', async function() {
-    if (!sessionToArchive) return;
-    
-    try {
-        const response = await fetch(`{% url 'review_manager:archive_session_ajax' session_id=0 %}`.replace('0', sessionToArchive), {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            },
+{% block extra_js %}
+    <script src="{% static 'review_manager/js/real_time_status.js' %}"></script>
+    <script src="{% static 'review_manager/js/notifications.js' %}"></script>
+    <script>
+        // Initialize real-time features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize status monitoring
+            const statusMonitor = initializeStatusMonitoring({
+                debug: {% if debug %}true{% else %}false{% endif %}
+            });
+            
+            // Initialize notification manager
+            const notificationManager = getNotificationManager();
+            
+            // Setup dashboard-specific functionality
+            setupDashboardFeatures();
+            
+            // Load user preferences
+            loadUserPreferences();
         });
         
-        const data = await response.json();
-        
-        if (data.success) {
-            // Hide the modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('archiveModal'));
-            modal.hide();
-            
-            // Show success message
-            reviewManagerDashboard.showSuccess(data.message);
-            
-            // Update the session card or reload if on active filter
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('status') === 'active' || !urlParams.get('status') || urlParams.get('status') === 'all') {
-                // Reload page to update the view
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+        function setupDashboardFeatures() {
+            // Auto-refresh search as user types
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        // Auto-submit search after 500ms of no typing
+                        document.getElementById('filter-form').submit();
+                    }, 500);
+                });
             }
-        } else {
-            reviewManagerDashboard.showError(data.error || 'Failed to archive session');
         }
-    } catch (error) {
-        console.error('Archive error:', error);
-        reviewManagerDashboard.showError('An error occurred while archiving the session');
-    }
-    
-    sessionToArchive = null;
-});
-
-// Initialize tooltips
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+        
+        function navigateToSession(sessionId, status) {
+            // Smart navigation based on session status
+            const navigationMap = {
+                'draft': '/strategy/define/' + sessionId + '/',
+                'strategy_ready': '/serp/execute/' + sessionId + '/',
+                'executing': '/serp/status/' + sessionId + '/',
+                'processing': '/serp/status/' + sessionId + '/',
+                'ready_for_review': '/review/overview/' + sessionId + '/',
+                'in_review': '/review/overview/' + sessionId + '/',
+                'completed': '/reporting/summary/' + sessionId + '/',
+                'failed': '/review/session/' + sessionId + '/',
+                'archived': '/reporting/summary/' + sessionId + '/'
+            };
+            
+            const url = navigationMap[status] || '/review/session/' + sessionId + '/';
+            window.location.href = url;
+        }
+        
+        function showErrorRecovery(sessionId) {
+            fetch(`/review/session/${sessionId}/recovery-options/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayErrorRecoveryOptions(sessionId, data.recovery_options);
+                    } else {
+                        showNotification('error', 'Error', 'Could not load recovery options');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading recovery options:', error);
+                    showNotification('error', 'Error', 'Could not load recovery options');
+                });
+        }
+        
+        function displayErrorRecoveryOptions(sessionId, options) {
+            const content = document.getElementById('error-recovery-content');
+            content.innerHTML = `
+                <div class="error-info">
+                    <h4>${options.title}</h4>
+                    <p>${options.message}</p>
+                    <p class="error-description">${options.description}</p>
+                </div>
+                <div class="recovery-suggestions">
+                    ${options.suggestions.map(suggestion => `
+                        <button class="btn ${suggestion.primary ? 'btn-primary' : 'btn-secondary'} recovery-action"
+                                onclick="executeRecoveryAction('${sessionId}', '${options.error_type}', '${suggestion.action}')">
+                            <i class="icon-${suggestion.icon}"></i>
+                            ${suggestion.text}
+                            ${suggestion.description ? `<small>${suggestion.description}</small>` : ''}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('error-recovery-modal').style.display = 'block';
+        }
+        
+        function executeRecoveryAction(sessionId, errorType, action) {
+            fetch('/review/api/error-recovery/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    error_type: errorType,
+                    action: action
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('success', 'Recovery Action', data.message);
+                    hideErrorRecovery();
+                    
+                    if (data.redirect_url) {
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 1000);
+                    } else {
+                        // Refresh the page to show updated status
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }
+                } else {
+                    showNotification('error', 'Recovery Failed', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Recovery action failed:', error);
+                showNotification('error', 'Error', 'Recovery action failed');
+            });
+        }
+        
+        function hideErrorRecovery() {
+            document.getElementById('error-recovery-modal').style.display = 'none';
+        }
+        
+        function showNotificationPreferences() {
+            document.getElementById('preferences-overlay').style.display = 'block';
+            document.getElementById('preferences-overlay').classList.add('visible');
+        }
+        
+        function hideNotificationPreferences() {
+            document.getElementById('preferences-overlay').classList.remove('visible');
+            setTimeout(() => {
+                document.getElementById('preferences-overlay').style.display = 'none';
+            }, 300);
+        }
+        
+        function loadUserPreferences() {
+            fetch('/review/api/notification-preferences/get/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const prefs = data.preferences;
+                        document.getElementById('pref-status-changes').checked = prefs.show_status_changes;
+                        document.getElementById('pref-error-notifications').checked = prefs.show_error_notifications;
+                        document.getElementById('pref-success-notifications').checked = prefs.show_success_notifications;
+                        document.getElementById('pref-auto-dismiss').value = prefs.auto_dismiss_duration / 1000;
+                        document.getElementById('pref-position').value = prefs.notification_position;
+                        document.getElementById('pref-sound-enabled').checked = prefs.sound_enabled;
+                        
+                        updateDismissDurationDisplay();
+                        
+                        // Apply preferences to notification manager
+                        const notificationManager = getNotificationManager();
+                        notificationManager.savePreferences(prefs);
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to load preferences:', error);
+                });
+        }
+        
+        function saveNotificationPreferences() {
+            const preferences = {
+                show_status_changes: document.getElementById('pref-status-changes').checked,
+                show_error_notifications: document.getElementById('pref-error-notifications').checked,
+                show_success_notifications: document.getElementById('pref-success-notifications').checked,
+                auto_dismiss_duration: parseInt(document.getElementById('pref-auto-dismiss').value) * 1000,
+                notification_position: document.getElementById('pref-position').value,
+                sound_enabled: document.getElementById('pref-sound-enabled').checked
+            };
+            
+            const notificationManager = getNotificationManager();
+            notificationManager.savePreferences(preferences);
+            hideNotificationPreferences();
+        }
+        
+        function updateDismissDurationDisplay() {
+            const slider = document.getElementById('pref-auto-dismiss');
+            const display = document.getElementById('dismiss-duration-display');
+            display.textContent = slider.value + ' seconds';
+        }
+        
+        // Update duration display when slider changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const slider = document.getElementById('pref-auto-dismiss');
+            if (slider) {
+                slider.addEventListener('input', updateDismissDurationDisplay);
+            }
         });
-    }
-});
-</script>
+        
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                   document.querySelector('meta[name=csrf-token]')?.content ||
+                   '';
+        }
+    </script>
 {% endblock %}

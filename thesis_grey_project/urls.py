@@ -33,5 +33,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('apps.accounts.urls')),
     path('review/', include('apps.review_manager.urls')),
-    path('strategy/', include('apps.search_strategy.urls')),
+    path('strategy/', include('apps.search_strategy.urls')),  # Re-enabled
+    path('serp/', include('apps.serp_execution.urls')),      # Added
+    path('results/', include('apps.review_results.urls')),   # Added
+    path('reporting/', include('apps.reporting.urls')),      # Added
 ]

@@ -1,0 +1,345 @@
+{% extends "review_manager/base.html" %}
+{% load static %}
+{% load review_manager_extras %}
+
+{% block title %}Status History - {{ session.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'review_manager/css/status-history.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="status-history-container">
+    <!-- Header Section -->
+    <div class="history-header">
+        <div class="header-content">
+            <h1>
+                <i class="icon-history"></i>
+                Status History
+            </h1>
+            <h2 class="session-title">{{ session.title }}</h2>
+            <p class="session-description">{{ session.description|truncatewords:20 }}</p>
+        </div>
+        
+        <div class="header-actions">
+            <a href="{% url 'review_manager:session_detail' session.id %}" 
+               class="btn btn-outline-secondary">
+                <i class="icon-arrow-left"></i> Back to Session
+            </a>
+            <a href="{% url 'review_manager:activity_timeline' session.id %}" 
+               class="btn btn-outline-primary">
+                <i class="icon-timeline"></i> Activity Timeline
+            </a>
+        </div>
+    </div>
+    
+    <!-- Status Overview -->
+    <div class="status-overview">
+        <div class="current-status">
+            <h3>Current Status</h3>
+            <div class="status-badge status-{{ session.status }}">
+                {{ session.get_status_display }}
+            </div>
+            <div class="status-duration">
+                Duration in current status: 
+                <strong>{{ current_status_duration|duration_display }}</strong>
+            </div>
+        </div>
+        
+        <div class="transition-stats">
+            <h3>Transition Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">{{ transition_stats.total_changes }}</div>
+                    <div class="stat-label">Total Changes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ transition_stats.progressions }}</div>
+                    <div class="stat-label">Progressions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ transition_stats.regressions }}</div>
+                    <div class="stat-label">Regressions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ transition_stats.error_recoveries }}</div>
+                    <div class="stat-label">Error Recoveries</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Time in Status -->
+    {% if time_in_status %}
+    <div class="time-analysis">
+        <h3>Time Spent in Each Status</h3>
+        <div class="time-bars">
+            {% for status, duration in time_in_status.items %}
+            <div class="time-bar-container">
+                <div class="time-bar-label">
+                    <span class="status-badge status-{{ status }}">
+                        {{ status|capfirst }}
+                    </span>
+                    <span class="time-duration">{{ duration|duration_display }}</span>
+                </div>
+                <div class="time-bar">
+                    <div class="time-bar-fill status-{{ status }}" 
+                         style="width: {% if max_duration_seconds > 0 %}{% widthratio duration.total_seconds max_duration_seconds 100 %}{% else %}0{% endif %}%">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Status History Timeline -->
+    <div class="history-timeline">
+        <h3>Complete Status History</h3>
+        
+        {% if status_history %}
+            <div class="timeline">
+                {% for history in status_history %}
+                <div class="timeline-item {% if history.is_progression %}progression{% elif history.is_regression %}regression{% elif history.is_error_recovery %}recovery{% endif %}">
+                    <div class="timeline-marker">
+                        {% if history.is_progression %}
+                            <i class="icon-arrow-up"></i>
+                        {% elif history.is_regression %}
+                            <i class="icon-arrow-down"></i>
+                        {% elif history.is_error_recovery %}
+                            <i class="icon-refresh"></i>
+                        {% else %}
+                            <i class="icon-circle"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <h4 class="transition-title">
+                                {% if history.from_status %}
+                                    {{ history.get_transition_display }}
+                                {% else %}
+                                    Session Created
+                                {% endif %}
+                            </h4>
+                            <div class="timeline-meta">
+                                <span class="timeline-user">
+                                    <i class="icon-user"></i> {{ history.changed_by.username }}
+                                </span>
+                                <span class="timeline-time">
+                                    <i class="icon-clock"></i> 
+                                    <time datetime="{{ history.changed_at|date:'c' }}" 
+                                          title="{{ history.changed_at }}">
+                                        {{ history.changed_at|date:"M d, Y H:i" }}
+                                    </time>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-body">
+                            <div class="status-transition">
+                                {% if history.from_status %}
+                                    <span class="status-badge status-{{ history.from_status }}">
+                                        {{ history.get_from_status_display }}
+                                    </span>
+                                    <i class="icon-arrow-right"></i>
+                                {% endif %}
+                                <span class="status-badge status-{{ history.to_status }}">
+                                    {{ history.get_to_status_display }}
+                                </span>
+                            </div>
+                            
+                            {% if history.duration_in_previous_status %}
+                            <div class="duration-info">
+                                <i class="icon-clock"></i>
+                                Time in previous status: 
+                                <strong>{{ history.duration_in_previous_status|duration_display }}</strong>
+                            </div>
+                            {% endif %}
+                            
+                            {% if history.reason %}
+                            <div class="change-reason">
+                                <i class="icon-info"></i>
+                                <strong>Reason:</strong> {{ history.reason }}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="transition-type">
+                                {% if history.is_progression %}
+                                    <span class="badge badge-success">
+                                        <i class="icon-trending-up"></i> Progression
+                                    </span>
+                                {% elif history.is_regression %}
+                                    <span class="badge badge-warning">
+                                        <i class="icon-trending-down"></i> Regression
+                                    </span>
+                                {% elif history.is_error_recovery %}
+                                    <span class="badge badge-info">
+                                        <i class="icon-refresh"></i> Error Recovery
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-secondary">
+                                        <i class="icon-circle"></i> Status Change
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if history.metadata %}
+                            <details class="change-metadata">
+                                <summary>Technical Details</summary>
+                                <div class="metadata-content">
+                                    {% for key, value in history.metadata.items %}
+                                    <div class="metadata-item">
+                                        <strong>{{ key|title }}:</strong> {{ value }}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </details>
+                            {% endif %}
+                            
+                            {% if history.ip_address %}
+                            <div class="technical-info">
+                                <small>
+                                    <i class="icon-globe"></i> 
+                                    Changed from {{ history.ip_address }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-history">
+                <div class="empty-history-icon">
+                    <i class="icon-history-empty"></i>
+                </div>
+                <h4>No Status History Available</h4>
+                <p>This session doesn't have any recorded status changes yet.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Status Flow Diagram -->
+    <div class="status-flow">
+        <h3>Status Flow Overview</h3>
+        <div class="flow-diagram">
+            <div class="flow-step">
+                <div class="status-badge status-draft">Draft</div>
+                <div class="flow-arrow">→</div>
+            </div>
+            <div class="flow-step">
+                <div class="status-badge status-strategy_ready">Strategy Ready</div>
+                <div class="flow-arrow">→</div>
+            </div>
+            <div class="flow-step">
+                <div class="status-badge status-executing">Executing</div>
+                <div class="flow-arrow">→</div>
+            </div>
+            <div class="flow-step">
+                <div class="status-badge status-processing">Processing</div>
+                <div class="flow-arrow">→</div>
+            </div>
+            <div class="flow-step">
+                <div class="status-badge status-ready_for_review">Ready for Review</div>
+                <div class="flow-arrow">→</div>
+            </div>
+            <div class="flow-step">
+                <div class="status-badge status-in_review">In Review</div>
+                <div class="flow-arrow">→</div>
+            </div>
+            <div class="flow-step">
+                <div class="status-badge status-completed">Completed</div>
+                <div class="flow-arrow">→</div>
+            </div>
+            <div class="flow-step">
+                <div class="status-badge status-archived">Archived</div>
+            </div>
+        </div>
+        
+        <div class="flow-legend">
+            <div class="legend-item">
+                <span class="legend-color progression"></span>
+                Normal progression flow
+            </div>
+            <div class="legend-item">
+                <span class="legend-color regression"></span>
+                Possible regression paths
+            </div>
+            <div class="legend-item">
+                <span class="legend-color failed"></span>
+                Failed status (can occur at any step)
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Options -->
+    <div class="export-section">
+        <h3>Export History</h3>
+        <div class="export-options">
+            <button class="btn btn-outline-primary export-history" 
+                    data-session-id="{{ session.id }}">
+                <i class="icon-download"></i> Export Status History
+            </button>
+            <button class="btn btn-outline-secondary export-timeline" 
+                    data-session-id="{{ session.id }}">
+                <i class="icon-timeline"></i> Export Full Timeline
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Export functionality
+    document.querySelectorAll('.export-history, .export-timeline').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const sessionId = this.dataset.sessionId;
+            const exportType = this.classList.contains('export-history') ? 'history' : 'timeline';
+            
+            fetch(`{% url 'review_manager:export_session_data_ajax' session.id %}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const blob = new Blob([JSON.stringify(data.data, null, 2)], 
+                                            { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = data.filename || `session_${sessionId}_${exportType}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        
+                        // Show success message
+                        const btn = this;
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '<i class="icon-check"></i> Exported!';
+                        btn.disabled = true;
+                        setTimeout(() => {
+                            btn.innerHTML = originalText;
+                            btn.disabled = false;
+                        }, 2000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Export failed:', error);
+                    alert('Export failed. Please try again.');
+                });
+        });
+    });
+    
+    // Add tooltips to timeline items
+    document.querySelectorAll('.timeline-item').forEach(item => {
+        const marker = item.querySelector('.timeline-marker');
+        const type = item.classList.contains('progression') ? 'Progression' :
+                    item.classList.contains('regression') ? 'Regression' :
+                    item.classList.contains('recovery') ? 'Error Recovery' : 'Status Change';
+        
+        marker.title = type;
+    });
+});
+</script>
+{% endblock %}

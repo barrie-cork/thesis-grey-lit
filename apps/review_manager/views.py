@@ -8,8 +8,17 @@ from django.db.models import Q, Count, Case, When, IntegerField
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
-from .forms import SessionCreateForm
+from django.utils import timezone
+from datetime import datetime, timedelta
+from .forms import SessionCreateForm, SessionEditForm
 from .models import SearchSession, SessionActivity
+# Import UserFeedbackMixin after we ensure it's working
+try:
+    from .mixins import UserFeedbackMixin  # Sprint 5 Task 29
+except ImportError:
+    # Fallback if mixins aren't ready yet
+    class UserFeedbackMixin:
+        pass
 
 # Create your views here.
 
@@ -147,8 +156,8 @@ class SessionNavigationMixin:
         }
 
 
-class DashboardView(LoginRequiredMixin, SessionNavigationMixin, ListView):
-    """Enhanced dashboard view with filtering and smart navigation"""
+class DashboardView(LoginRequiredMixin, SessionNavigationMixin, UserFeedbackMixin, ListView):
+    """Enhanced dashboard view with advanced filtering - Sprint 5 Task 25"""
     model = SearchSession
     template_name = 'review_manager/dashboard.html'
     context_object_name = 'sessions'
@@ -160,11 +169,9 @@ class DashboardView(LoginRequiredMixin, SessionNavigationMixin, ListView):
             created_by=self.request.user
         ).select_related('created_by')
         
-        # Apply filters
-        status_filter = self.request.GET.get('status')
-        search_query = self.request.GET.get('q')
-        
-        if status_filter and status_filter != 'all':
+        # Apply status filter
+        status_filter = self.request.GET.get('status', 'all')
+        if status_filter != 'all':
             if status_filter == 'active':
                 queryset = queryset.exclude(
                     status__in=['completed', 'archived', 'failed']
@@ -172,39 +179,74 @@ class DashboardView(LoginRequiredMixin, SessionNavigationMixin, ListView):
             else:
                 queryset = queryset.filter(status=status_filter)
         
+        # Apply search filter
+        search_query = self.request.GET.get('q', '').strip()
         if search_query:
             queryset = queryset.filter(
                 Q(title__icontains=search_query) | 
                 Q(description__icontains=search_query)
             )
         
-        # Order by status priority then date
-        status_order = Case(
-            When(status='in_review', then=1),
-            When(status='ready_for_review', then=2),
-            When(status='processing', then=3),
-            When(status='executing', then=4),
-            When(status='strategy_ready', then=5),
-            When(status='draft', then=6),
-            When(status='failed', then=7),
-            When(status='completed', then=8),
-            When(status='archived', then=9),
-            default=10,
-            output_field=IntegerField()
-        )
+        # Apply date range filter - Sprint 5 Enhancement
+        date_filter = self.request.GET.get('date_range', 'all')
+        if date_filter != 'all':
+            now = timezone.now()
+            if date_filter == 'today':
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                queryset = queryset.filter(created_at__gte=start_date)
+            elif date_filter == 'week':
+                start_date = now - timedelta(days=7)
+                queryset = queryset.filter(created_at__gte=start_date)
+            elif date_filter == 'month':
+                start_date = now - timedelta(days=30)
+                queryset = queryset.filter(created_at__gte=start_date)
+            elif date_filter == 'year':
+                start_date = now - timedelta(days=365)
+                queryset = queryset.filter(created_at__gte=start_date)
         
-        return queryset.annotate(
-            status_order=status_order
-        ).order_by('status_order', '-updated_at')
+        # Apply sorting - Sprint 5 Enhancement
+        sort_option = self.request.GET.get('sort', 'status')
+        if sort_option == 'created':
+            return queryset.order_by('-created_at')
+        elif sort_option == 'updated':
+            return queryset.order_by('-updated_at')
+        elif sort_option == 'title':
+            return queryset.order_by('title')
+        else:  # Default status-based sorting
+            status_order = Case(
+                When(status='in_review', then=1),
+                When(status='ready_for_review', then=2),
+                When(status='processing', then=3),
+                When(status='executing', then=4),
+                When(status='strategy_ready', then=5),
+                When(status='draft', then=6),
+                When(status='failed', then=7),
+                When(status='completed', then=8),
+                When(status='archived', then=9),
+                default=10,
+                output_field=IntegerField()
+            )
+            
+            return queryset.annotate(
+                status_order=status_order
+            ).order_by('status_order', '-updated_at')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         all_sessions = SearchSession.objects.filter(created_by=self.request.user)
         
-        # Calculate stats
+        # Calculate enhanced stats - Sprint 5
         active_sessions = all_sessions.exclude(
             status__in=['completed', 'archived', 'failed']
         )
+        
+        # Status counts for quick filter chips
+        status_counts = {
+            'draft_count': all_sessions.filter(status='draft').count(),
+            'in_review_count': all_sessions.filter(status='in_review').count(),
+            'completed_count': all_sessions.filter(status='completed').count(),
+            'archived_count': all_sessions.filter(status='archived').count(),
+        }
         
         context.update({
             'total_sessions': all_sessions.count(),
@@ -212,7 +254,10 @@ class DashboardView(LoginRequiredMixin, SessionNavigationMixin, ListView):
             'completed_sessions': all_sessions.filter(status='completed').count(),
             'current_filter': self.request.GET.get('status', 'all'),
             'search_query': self.request.GET.get('q', ''),
+            'current_date_filter': self.request.GET.get('date_range', 'all'),
+            'current_sort': self.request.GET.get('sort', 'status'),
             'status_choices': SearchSession.Status.choices,
+            **status_counts,
         })
         
         # Add navigation info for each session
@@ -242,7 +287,7 @@ class SessionDetailView(LoginRequiredMixin, UserPassesTestMixin, SessionNavigati
         # Get recent activity
         recent_activities = SessionActivity.objects.filter(
             session=session
-        ).order_by('-performed_at')[:5]
+        ).order_by('-timestamp')[:5]
         
         # Get detailed statistics
         stats = self.get_session_stats(session)
@@ -317,7 +362,7 @@ def session_create_view(request):
 class SessionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """Edit session title and description only"""
     model = SearchSession
-    fields = ['title', 'description']
+    form_class = SessionEditForm
     template_name = 'review_manager/session_edit.html'
     pk_url_kwarg = 'session_id'
     
@@ -326,12 +371,13 @@ class SessionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return session.created_by == self.request.user
     
     def form_valid(self, form):
-        response = super().form_valid(form)
+        # Pass user to the form for activity logging
+        form.save(user=self.request.user)
         messages.success(
             self.request, 
             f'Session "{self.object.title}" has been updated successfully.'
         )
-        return response
+        return redirect(self.get_success_url())
     
     def get_success_url(self):
         return reverse('review_manager:session_detail', 
@@ -384,8 +430,8 @@ class DuplicateSessionView(LoginRequiredMixin, UserPassesTestMixin, View):
         # Log the duplication
         SessionActivity.objects.create(
             session=duplicate,
-            activity_type=SessionActivity.ActivityType.CREATED,
-            performed_by=request.user,
+            action=SessionActivity.ActivityType.CREATED,
+            user=request.user,
             description=f"Session duplicated from '{original.title}'"
         )
         
@@ -435,8 +481,8 @@ def archive_session_ajax(request, session_id):
     # Log the action
     SessionActivity.objects.create(
         session=session,
-        activity_type=SessionActivity.ActivityType.STATUS_CHANGED,
-        performed_by=request.user,
+        action=SessionActivity.ActivityType.STATUS_CHANGED,
+        user=request.user,
         description=f"Session archived by {request.user.username}",
         old_status='completed',
         new_status='archived'

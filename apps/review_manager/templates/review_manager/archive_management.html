@@ -1,0 +1,342 @@
+{% extends "review_manager/base.html" %}
+{% load static %}
+
+{% block title %}Archive Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'review_manager/css/archive.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="archive-container">
+    <!-- Header Section -->
+    <div class="archive-header">
+        <div class="header-content">
+            <h1>
+                <i class="icon-archive"></i>
+                Archive Management
+            </h1>
+            <p class="archive-description">
+                Manage your archived review sessions. Archived sessions are hidden from the main dashboard 
+                but remain accessible for reference and can be restored at any time.
+            </p>
+        </div>
+        
+        <div class="header-actions">
+            <a href="{% url 'review_manager:dashboard' %}" 
+               class="btn btn-outline-secondary">
+                <i class="icon-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'review_manager:stats_analytics' %}" 
+               class="btn btn-outline-primary">
+                <i class="icon-chart"></i> View Analytics
+            </a>
+        </div>
+    </div>
+    
+    <!-- Archive Statistics -->
+    <div class="archive-stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ archive_stats.total_archived }}</div>
+            <div class="stat-label">Total Archived</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ archive_stats.archived_this_month }}</div>
+            <div class="stat-label">Archived This Month</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">
+                {% if archive_stats.oldest_archive %}
+                    {{ archive_stats.oldest_archive.archive_info.archived_at|date:"M Y" }}
+                {% else %}
+                    None
+                {% endif %}
+            </div>
+            <div class="stat-label">Oldest Archive</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">
+                {% if archive_stats.newest_archive %}
+                    {{ archive_stats.newest_archive.archive_info.archived_at|timesince }} ago
+                {% else %}
+                    None
+                {% endif %}
+            </div>
+            <div class="stat-label">Latest Archive</div>
+        </div>
+    </div>
+    
+    <!-- Filters Section -->
+    <div class="archive-filters">
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <label for="q">Search Archives:</label>
+                <input type="text" 
+                       name="q" 
+                       id="q"
+                       value="{{ search_query }}"
+                       placeholder="Search by title or description..."
+                       class="form-control">
+            </div>
+            
+            <div class="filter-group">
+                <label for="archived_date">Archive Date:</label>
+                <select name="archived_date" id="archived_date" class="form-control">
+                    <option value="all" {% if current_date_filter == 'all' %}selected{% endif %}>All Time</option>
+                    <option value="week" {% if current_date_filter == 'week' %}selected{% endif %}>Last Week</option>
+                    <option value="month" {% if current_date_filter == 'month' %}selected{% endif %}>Last Month</option>
+                    <option value="year" {% if current_date_filter == 'year' %}selected{% endif %}>Last Year</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="sort">Sort By:</label>
+                <select name="sort" id="sort" class="form-control">
+                    <option value="archived_date" {% if current_sort == 'archived_date' %}selected{% endif %}>Archive Date</option>
+                    <option value="title" {% if current_sort == 'title' %}selected{% endif %}>Title</option>
+                    <option value="completed_date" {% if current_sort == 'completed_date' %}selected{% endif %}>Completion Date</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="icon-filter"></i> Apply Filters
+                </button>
+            </div>
+            
+            {% if search_query or current_date_filter != 'all' or current_sort != 'archived_date' %}
+            <div class="filter-group">
+                <a href="{% url 'review_manager:archive_management' %}" class="btn btn-link">
+                    Clear Filters
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+    
+    <!-- Archived Sessions -->
+    <div class="archive-content">
+        {% if archived_sessions %}
+            <div class="sessions-grid">
+                {% for session in archived_sessions %}
+                <div class="archive-card">
+                    <div class="card-header">
+                        <h3 class="session-title">{{ session.title }}</h3>
+                        <div class="archive-badge">
+                            <i class="icon-archive"></i>
+                            Archived {{ session.archive_info.archived_at|timesince }} ago
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <p class="session-description">
+                            {{ session.description|truncatewords:15|default:"No description provided." }}
+                        </p>
+                        
+                        <div class="session-meta">
+                            <div class="meta-item">
+                                <i class="icon-calendar"></i>
+                                <span>Completed: {{ session.completed_date|date:"M d, Y"|default:"Not completed" }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="icon-user"></i>
+                                <span>Archived by: {{ session.archive_info.archived_by.username }}</span>
+                            </div>
+                            {% if session.archive_info.archive_reason %}
+                            <div class="meta-item">
+                                <i class="icon-info"></i>
+                                <span>Reason: {{ session.archive_info.archive_reason|truncatewords:8 }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if session.archive_info.stats_snapshot %}
+                        <div class="stats-snapshot">
+                            <h4>Statistics at Archive Time:</h4>
+                            <div class="snapshot-stats">
+                                {% for key, value in session.archive_info.stats_snapshot.items %}
+                                <span class="stat-item">{{ key|title }}: {{ value }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-actions">
+                        <a href="{% url 'review_manager:session_detail' session.id %}" 
+                           class="btn btn-outline-secondary btn-sm">
+                            <i class="icon-eye"></i> View Details
+                        </a>
+                        <a href="{% url 'review_manager:activity_timeline' session.id %}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="icon-timeline"></i> Timeline
+                        </a>
+                        <form method="post" 
+                              action="{% url 'review_manager:unarchive_session' session.id %}" 
+                              class="inline-form"
+                              onsubmit="return confirm('Are you sure you want to restore this session from archive?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="icon-restore"></i> Restore
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if archived_sessions.has_other_pages %}
+            <div class="pagination-container">
+                <nav aria-label="Archive pagination">
+                    <ul class="pagination">
+                        {% if archived_sessions.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" 
+                                   href="?page={{ archived_sessions.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_date_filter != 'all' %}&archived_date={{ current_date_filter }}{% endif %}{% if current_sort != 'archived_date' %}&sort={{ current_sort }}{% endif %}">
+                                    Previous
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ archived_sessions.number }} of {{ archived_sessions.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if archived_sessions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" 
+                                   href="?page={{ archived_sessions.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_date_filter != 'all' %}&archived_date={{ current_date_filter }}{% endif %}{% if current_sort != 'archived_date' %}&sort={{ current_sort }}{% endif %}">
+                                    Next
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="empty-archive">
+                <div class="empty-archive-icon">
+                    <i class="icon-archive-empty"></i>
+                </div>
+                <h3>No Archived Sessions Found</h3>
+                <p>
+                    {% if search_query or current_date_filter != 'all' %}
+                        No archived sessions match your current filters. Try adjusting the filters or 
+                        <a href="{% url 'review_manager:archive_management' %}">view all archives</a>.
+                    {% else %}
+                        You haven't archived any sessions yet. When you complete a review session, 
+                        you can archive it to keep your main dashboard organised.
+                        <br><br>
+                        <a href="{% url 'review_manager:dashboard' %}" class="btn btn-primary">
+                            <i class="icon-arrow-left"></i> Return to Dashboard
+                        </a>
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Bulk Actions (if there are archived sessions) -->
+    {% if archived_sessions %}
+    <div class="bulk-actions">
+        <div class="bulk-info">
+            <p><strong>Bulk Actions:</strong> Select multiple sessions and perform actions on them simultaneously.</p>
+        </div>
+        
+        <form method="post" action="{% url 'review_manager:bulk_archive' %}" id="bulk-form">
+            {% csrf_token %}
+            <div class="bulk-controls">
+                <label class="bulk-checkbox">
+                    <input type="checkbox" id="select-all"> Select All Visible
+                </label>
+                
+                <div class="bulk-buttons">
+                    <button type="submit" 
+                            class="btn btn-outline-danger"
+                            onclick="return confirm('Are you sure you want to permanently delete the selected archived sessions? This action cannot be undone.');"
+                            disabled>
+                        <i class="icon-trash"></i> Delete Selected
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add checkboxes to session cards for bulk actions -->
+{% if archived_sessions %}
+<style>
+.archive-card {
+    position: relative;
+}
+.archive-card .bulk-checkbox {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add bulk selection functionality
+    const selectAllCheckbox = document.getElementById('select-all');
+    const bulkForm = document.getElementById('bulk-form');
+    const sessionCards = document.querySelectorAll('.archive-card');
+    
+    // Add checkboxes to session cards
+    sessionCards.forEach(function(card, index) {
+        const sessionId = card.querySelector('a[href*="/review/"]').href.match(/\/review\/(\d+)\//)[1];
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'session_ids';
+        checkbox.value = sessionId;
+        checkbox.className = 'session-checkbox';
+        
+        const label = document.createElement('label');
+        label.className = 'bulk-checkbox';
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(' Select'));
+        
+        card.appendChild(label);
+    });
+    
+    // Handle select all functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const sessionCheckboxes = document.querySelectorAll('.session-checkbox');
+            sessionCheckboxes.forEach(function(checkbox) {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateBulkButtons();
+        });
+    }
+    
+    // Handle individual checkbox changes
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('session-checkbox')) {
+            updateBulkButtons();
+        }
+    });
+    
+    function updateBulkButtons() {
+        const checkedBoxes = document.querySelectorAll('.session-checkbox:checked');
+        const bulkButtons = document.querySelectorAll('.bulk-buttons button');
+        
+        bulkButtons.forEach(function(button) {
+            button.disabled = checkedBoxes.length === 0;
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'review_manager/js/archive.js' %}"></script>
+{% endblock %}

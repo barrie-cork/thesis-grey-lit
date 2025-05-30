@@ -1,9 +1,9 @@
-# Thesis Grey - Django Implementation
+# Thesis Grey Literature - Django Implementation
 
 ## 🚨 **CRITICAL DEVELOPER ALERT**
 
 ### **🚀 NEW DEVELOPERS START HERE**
-**📋 [ONBOARDING_INDEX.md](ONBOARDING_INDEX.md)** - Complete step-by-step onboarding checklist
+**📋 [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** - Complete step-by-step onboarding checklist
 
 ### ⚠️ **CUSTOM USER MODEL IN USE**
 This project uses a **CUSTOM USER MODEL** (`accounts.User`) instead of Django's default `auth.User`.
@@ -11,6 +11,7 @@ This project uses a **CUSTOM USER MODEL** (`accounts.User`) instead of Django's 
 **📚 REQUIRED READING BEFORE DEVELOPMENT:**
 - **[CUSTOM_USER_ALERT.md](CUSTOM_USER_ALERT.md)** - Critical implementation details
 - **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** - Complete setup checklist
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Comprehensive development standards
 - **[apps/accounts/README.md](apps/accounts/README.md)** - Custom User model documentation
 
 **✅ Quick Reference:**
@@ -27,267 +28,236 @@ from django.contrib.auth.models import User
 
 ---
 
-wsl to project folder: /mnt/d/Python/Projects/thesis-grey-lit  
-VE: source venv/bin/activate
-
 ## Quick Start Guide
 
-This repository contains the Django-based implementation of Thesis Grey, a specialised search application for clinical guideline development and grey literature discovery.
+This repository contains the Django-based implementation of a grey literature search and review application for systematic research and clinical guideline development.
 
 ## Project Overview
 
-Thesis Grey helps researchers:
-- Create and execute systematic search strategies
+This Django application helps researchers:
+- Create and manage literature review sessions
+- Execute systematic search strategies
 - Process and review search results efficiently
-- Generate PRISMA-compliant reports
-- Manage literature review workflows
+- Track workflow progress and collaboration
+- Generate comprehensive reports
 
 ## Technology Stack
 
-- **Backend**: Django 4.2 with Django REST Framework
-- **Database**: PostgreSQL with Redis for caching
-- **Background Tasks**: Celery with Redis broker
-- **Frontend**: React 18 with Vite and TailwindCSS
-- **API Integration**: Google Search via Serper
+- **Backend**: Django 4.2
+- **Database**: SQLite (development) / PostgreSQL (production)
+- **Frontend**: Django templates with modern CSS/JS
+- **Authentication**: Custom User model with UUID primary keys
+- **Testing**: Django's built-in testing framework
 
 ## Development Setup
 
 ### Prerequisites
-- Python 3.8+ (3.11+ recommended)
-- Node.js 18+
-- Docker and Docker Compose
-- PostgreSQL (or use Docker)
-- Redis (or use Docker)
+- Python 3.12+ 
+- Git for version control
+- Virtual environment (venv or virtualenv)
 
-### Quick Setup with Docker
+### Quick Setup
 
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd thesis-django
+cd thesis-grey-lit
+
+# Create and activate virtual environment
+python -m venv venv
+
+# Windows
+venv\\Scripts\\activate
+
+# Linux/Mac
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 
 # Copy environment file
 cp .env.example .env
-
-# Start all services
-docker-compose up -d
-
-# Run migrations
-docker-compose exec web python manage.py migrate
-
-# Create superuser
-docker-compose exec web python manage.py createsuperuser
-
-# Access the application
-# Backend: http://localhost:8000
-# Frontend: http://localhost:3000
-# Admin: http://localhost:8000/admin
-```
-
-### Local Development Setup
-
-```bash
-# Backend setup
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements/development.txt
-
-# Set up environment variables
-cp .env.example .env
 # Edit .env with your settings
 
-# Database setup
+# Run migrations
 python manage.py migrate
+
+# Create superuser
 python manage.py createsuperuser
 
-# Start backend services
-python manage.py runserver  # Terminal 1
-celery -A thesis_grey worker -l info  # Terminal 2
+# Start development server
+python manage.py runserver
 
-# Frontend setup (new terminal)
-cd frontend
-npm install
-npm run dev  # Starts on http://localhost:3000
+# Access the application at http://localhost:8000
 ```
 
 ## Project Structure
 
 ```
-thesis_grey/
-├── apps/                   # Django applications
-│   ├── authentication/    # User management
-│   ├── search_sessions/   # Session management
-│   ├── search_strategy/   # Query building
-│   ├── serp_execution/    # Search execution
-│   ├── results_manager/   # Result processing
-│   ├── review_results/    # Review workflow
-│   └── reporting/         # Reports and exports
-├── frontend/              # React application
-├── thesis_grey/           # Django project settings
-├── api/                   # API configuration
-├── requirements/          # Python dependencies
-└── docker-compose.yml     # Development containers
+thesis-grey-lit/
+├── apps/                       # Django applications
+│   ├── accounts/              # Custom User model and authentication
+│   ├── review_manager/        # Core session management (working example)
+│   ├── search_strategy/       # Search strategy building (future)
+│   ├── serp_execution/        # Search execution (future)
+│   ├── results_manager/       # Result processing (future)
+│   ├── review_results/        # Review workflow (future)
+│   └── reporting/             # Reports and exports (future)
+├── templates/                  # HTML templates
+├── static/                     # Static files (CSS, JS, images)
+├── thesis_grey_project/       # Django project settings
+├── docs/                      # Project documentation
+├── venv/                      # Virtual environment (local)
+├── requirements.txt           # Python dependencies
+├── manage.py                  # Django management script
+└── README.md                  # This file
 ```
 
 ## Key Features
 
-### Phase 1 Implementation
-- ✅ User authentication and session management
-- ✅ Search strategy builder with PIC framework
-- ✅ Automated search execution via Google API
-- ✅ Result processing and deduplication
-- ✅ Review workflow with tagging system
-- ✅ PRISMA-compliant reporting
-- ✅ CSV/JSON export functionality
+### ✅ Implemented (Phase 1)
+- **User Management**: Custom User model with UUID primary keys
+- **Session Management**: Create, edit, delete, and duplicate literature review sessions
+- **Workflow States**: Draft → Strategy Ready → Executing → Processing → Review → Completed → Archived
+- **Activity Logging**: Complete audit trail of all session activities
+- **Status History**: Detailed tracking of status changes and transitions
+- **User Statistics**: Productivity metrics and completion rates
+- **Access Control**: Users can only access their own sessions
+- **Responsive UI**: Modern dashboard with search and filtering
 
-### Planned Phase 2 Enhancements
-- 🔄 Advanced collaboration features
-- 🔄 Multi-engine search integration
-- 🔄 Enhanced duplicate detection
-- 🔄 Custom reporting templates
-- 🔄 Reference manager integration
+### 🔄 Planned (Future Phases)
+- Search strategy builder with PIC framework
+- Automated search execution
+- Result processing and deduplication
+- Review workflow with tagging
+- PRISMA-compliant reporting
+- Advanced collaboration features
 
-## API Documentation
+## Current Implementation
 
-### Authentication
-```http
-POST /api/v1/auth/login/
-POST /api/v1/auth/register/
-POST /api/v1/auth/token/refresh/
-```
+The **Review Manager** app (`apps/review_manager/`) serves as the working example and foundation for all other apps. It demonstrates:
 
-### Search Sessions
-```http
-GET    /api/v1/search-sessions/
-POST   /api/v1/search-sessions/
-GET    /api/v1/search-sessions/{id}/
-PATCH  /api/v1/search-sessions/{id}/
-DELETE /api/v1/search-sessions/{id}/
-```
-
-### Search Execution
-```http
-POST /api/v1/serp-execution/sessions/{id}/execute/
-GET  /api/v1/serp-execution/sessions/{id}/status/
-```
-
-### Results and Review
-```http
-GET    /api/v1/results/{session_id}/
-GET    /api/v1/review-tags/?session_id={id}
-POST   /api/v1/review-tags/
-POST   /api/v1/review-tags/{id}/assign_to_result/
-```
-
-### Reporting
-```http
-GET /api/v1/reporting/sessions/{id}/report/
-GET /api/v1/reporting/sessions/{id}/export/?format=csv
-```
+- Proper custom User model usage
+- Django model relationships and constraints
+- Status workflow management
+- Activity logging with signals
+- Template-based UI with modern styling
+- Comprehensive test coverage
+- Management commands for sample data
 
 ## Testing
 
 ```bash
 # Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=apps
+python manage.py test
 
 # Run specific app tests
-pytest apps/search_sessions/tests/
+python manage.py test apps.review_manager
 
-# Run frontend tests
-cd frontend && npm test
+# Run with coverage (if installed)
+coverage run --source='.' manage.py test
+coverage report
 ```
 
-## Deployment
+## Development Workflow
 
-### Production Deployment
+1. **Read the onboarding documentation** (see links above)
+2. **Understand the custom User model** (critical!)
+3. **Examine the review_manager app** as your implementation reference
+4. **Follow the established patterns** for new apps
+5. **Write tests** using the custom User model
+6. **Update documentation** as you add features
+
+## Management Commands
 
 ```bash
-# Build and deploy with Docker
-docker-compose -f docker-compose.prod.yml up -d
+# Create sample session data for testing
+python manage.py create_sample_sessions --count 10
 
-# Or deploy to cloud platforms
-# (Documentation for AWS, Azure, GCP deployment)
+# Clean up test data
+python manage.py create_sample_sessions --clean
+
+# Check for common issues
+python manage.py check
 ```
 
-### Environment Variables
+## URLs
 
-Required environment variables:
+- **Dashboard**: http://localhost:8000/review/
+- **Admin**: http://localhost:8000/admin/
+- **Session Detail**: http://localhost:8000/review/{session-id}/
+- **Session Timeline**: http://localhost:8000/review/{session-id}/timeline/
+- **Session History**: http://localhost:8000/review/{session-id}/history/
+
+## Environment Variables
+
+Required environment variables in `.env`:
 ```env
-SECRET_KEY=your-secret-key
-DB_NAME=thesis_grey
-DB_USER=postgres
-DB_PASSWORD=your-password
-DB_HOST=localhost
-DB_PORT=5432
-REDIS_URL=redis://localhost:6379/0
-SERPER_API_KEY=your-serper-api-key
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+DATABASE_URL=sqlite:///db.sqlite3
+# Add other settings as needed
 ```
+
+## Common Issues & Solutions
+
+### **Error: "Manager isn't available; 'auth.User' has been swapped"**
+**Solution**: You're using the wrong User model. Use `get_user_model()` instead.
+
+### **Error: "Cannot assign User instance"**
+**Solution**: Use `settings.AUTH_USER_MODEL` in model ForeignKeys.
+
+### **Tests failing with User model errors**
+**Solution**: Check your test setup uses `get_user_model()`.
+
+See [CUSTOM_USER_ALERT.md](CUSTOM_USER_ALERT.md) for detailed solutions.
+
+## Documentation
+
+- **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** - Complete setup checklist
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - Comprehensive development standards
+- **[CUSTOM_USER_ALERT.md](CUSTOM_USER_ALERT.md)** - Critical User model information
+- **[TEAM_LEAD_CHECKLIST.md](TEAM_LEAD_CHECKLIST.md)** - Project management tools
+- **[docs/PRD.md](docs/PRD.md)** - Product requirements and architecture
+- **[apps/review_manager/README.md](apps/review_manager/README.md)** - Working implementation example
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. **Read all onboarding documentation first**
+2. **Understand the custom User model requirements**
+3. **Follow the review_manager app patterns**
+4. **Write comprehensive tests**
+5. **Update documentation**
+6. **Submit clean pull requests**
 
-## Development Guidelines
+## Project Architecture
 
-- Follow Django best practices and PEP 8
-- Write tests for new features
-- Update documentation for API changes
-- Use type hints where appropriate
-- Follow the existing code structure
+This is a Django 4.2 application built with:
+- **Custom User Model**: UUIDs instead of integer primary keys
+- **App-based Architecture**: Modular design with clear separation of concerns
+- **Signal-based Activity Logging**: Automatic audit trail
+- **Template-based Frontend**: Server-side rendering with modern styling
+- **Comprehensive Testing**: Full test coverage with proper patterns
 
-## Troubleshooting
+## Development Status
 
-### Common Issues
-
-**Database Connection Error**
-```bash
-# Check PostgreSQL is running
-docker-compose ps
-# Reset database
-docker-compose down -v && docker-compose up -d
-```
-
-**Celery Tasks Not Running**
-```bash
-# Check Redis connection
-redis-cli ping
-# Restart Celery worker
-celery -A thesis_grey worker -l info
-```
-
-**Frontend Build Issues**
-```bash
-# Clear node modules and reinstall
-cd frontend && rm -rf node_modules package-lock.json
-npm install
-```
+- **Phase 1**: ✅ Complete - Core session management with custom User model
+- **Phase 2**: 🔄 In Progress - Search strategy and execution
+- **Phase 3**: 📋 Planned - Review workflow and reporting
+- **Phase 4**: 📋 Planned - Advanced features and collaboration
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is for academic/research use. See LICENSE file for details.
 
 ## Support
 
-For support and questions:
-- Create an issue in the repository
-- Check the documentation in `/docs`
-- Review the FAQ section
+For development support:
+1. Check the comprehensive documentation
+2. Review the working review_manager app
+3. Examine the test files for examples
+4. Create issues for bugs or questions
 
-## Changelog
+---
 
-### Version 1.0.0 (Phase 1)
-- Initial Django implementation
-- Core search and review functionality
-- Basic reporting and export features
-
-### Roadmap
-- Version 1.1.0: Enhanced UI and performance improvements
-- Version 2.0.0: Phase 2 features and collaboration tools
+**🎯 Goal**: Build a robust literature review platform that follows Django best practices and provides researchers with powerful tools for systematic review work.

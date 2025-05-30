@@ -1,0 +1,540 @@
+/* Status Indicators - Real-time status display with animations */
+
+/* Base status badge styles */
+.status-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: default;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+/* Status-specific colors */
+.status-badge.status-draft {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.status-badge.status-strategy_ready {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.status-badge.status-executing {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.status-badge.status-processing {
+    background-color: #e0e7ff;
+    color: #5b21b6;
+    border: 1px solid #c4b5fd;
+}
+
+.status-badge.status-ready_for_review {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.status-badge.status-in_review {
+    background-color: #ddd6fe;
+    color: #5b21b6;
+    border: 1px solid #c4b5fd;
+}
+
+.status-badge.status-completed {
+    background-color: #dcfce7;
+    color: #14532d;
+    border: 1px solid #86efac;
+}
+
+.status-badge.status-failed {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.status-badge.status-archived {
+    background-color: #f9fafb;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+}
+
+/* Real-time update animations */
+.status-badge.updating {
+    animation: statusPulse 1s infinite;
+    transform: scale(1.02);
+}
+
+@keyframes statusPulse {
+    0%, 100% { 
+        opacity: 1; 
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    50% { 
+        opacity: 0.8; 
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+    }
+}
+
+/* Status change animation */
+.status-badge.status-changed {
+    animation: statusChange 1s ease-out;
+}
+
+@keyframes statusChange {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Status icons */
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.875rem;
+}
+
+/* Icon animations for active states */
+.status-executing .status-icon,
+.status-processing .status-icon {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Progress bar for active statuses */
+.status-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 0 0 1rem 1rem;
+    overflow: hidden;
+    display: none;
+}
+
+.status-progress.active {
+    display: block;
+}
+
+.progress-bar {
+    height: 100%;
+    background: currentColor;
+    transition: width 0.5s ease;
+    position: relative;
+    width: 0%;
+}
+
+/* Progress bar shimmer effect */
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.6),
+        transparent
+    );
+    animation: progressShimmer 2s infinite;
+}
+
+@keyframes progressShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Status text styling */
+.status-text {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+/* Hover effects for interactive status badges */
+.status-badge.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-badge.clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge.clickable:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Large status badges for detail views */
+.status-badge.status-large {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 1.5rem;
+}
+
+.status-badge.status-large .status-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 1rem;
+}
+
+.status-badge.status-large .status-progress {
+    height: 4px;
+}
+
+/* Small status badges for compact displays */
+.status-badge.status-small {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 0.75rem;
+    gap: 0.25rem;
+}
+
+.status-badge.status-small .status-icon {
+    width: 0.75rem;
+    height: 0.75rem;
+    font-size: 0.75rem;
+}
+
+.status-badge.status-small .status-progress {
+    height: 2px;
+}
+
+/* Status badge container for proper alignment */
+.status-badge-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Tooltip for status explanations */
+.status-badge[title] {
+    cursor: help;
+}
+
+/* Accessibility improvements */
+.status-badge:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .status-badge {
+        border-width: 2px;
+        font-weight: 600;
+    }
+    
+    .status-badge.status-draft {
+        background-color: #ffffff;
+        color: #000000;
+        border-color: #000000;
+    }
+    
+    .status-badge.status-completed {
+        background-color: #008000;
+        color: #ffffff;
+        border-color: #008000;
+    }
+    
+    .status-badge.status-failed {
+        background-color: #ff0000;
+        color: #ffffff;
+        border-color: #ff0000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .status-badge,
+    .status-badge *,
+    .progress-bar,
+    .progress-bar::after {
+        animation: none !important;
+        transition: none !important;
+    }
+    
+    .status-badge.updating {
+        opacity: 0.8;
+        transform: none;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .status-badge.status-draft {
+        background-color: #374151;
+        color: #f9fafb;
+        border-color: #6b7280;
+    }
+    
+    .status-badge.status-completed {
+        background-color: #065f46;
+        color: #d1fae5;
+        border-color: #10b981;
+    }
+    
+    .status-badge.status-failed {
+        background-color: #991b1b;
+        color: #fee2e2;
+        border-color: #f87171;
+    }
+    
+    .status-badge.status-archived {
+        background-color: #1f2937;
+        color: #9ca3af;
+        border-color: #4b5563;
+    }
+}
+
+/* Real-time connection status indicator */
+.connection-status {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 1000;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.connection-status.visible {
+    opacity: 1;
+}
+
+.connection-status.connected {
+    background-color: #10b981;
+}
+
+.connection-status.disconnected {
+    background-color: #ef4444;
+}
+
+.connection-status.reconnecting {
+    background-color: #f59e0b;
+}
+
+/* Heartbeat indicator */
+.heartbeat-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #10b981;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    animation: heartbeat 2s infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.2); 
+        opacity: 0.7; 
+    }
+}
+
+.heartbeat-indicator.disconnected {
+    background-color: #ef4444;
+    animation: none;
+}
+
+.heartbeat-indicator.slow {
+    animation-duration: 4s;
+}
+
+/* Status transition indicators */
+.status-transition {
+    position: relative;
+    overflow: hidden;
+}
+
+.status-transition::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+    );
+    transition: left 0.6s ease;
+}
+
+.status-transition.transitioning::before {
+    left: 100%;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8rem;
+        gap: 0.375rem;
+    }
+    
+    .status-badge.status-large {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-radius: 1rem;
+    }
+    
+    .status-icon {
+        width: 0.875rem;
+        height: 0.875rem;
+        font-size: 0.8rem;
+    }
+    
+    .connection-status {
+        bottom: 0.5rem;
+        left: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.7rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .status-badge {
+        border: 1px solid #000 !important;
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+    }
+    
+    .status-progress,
+    .connection-status,
+    .heartbeat-indicator {
+        display: none !important;
+    }
+}
+
+/* Error recovery status styles */
+.status-badge.status-recovering {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    animation: recoveryPulse 2s infinite;
+}
+
+@keyframes recoveryPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.status-badge.status-recovering .status-icon {
+    animation: spin 1s linear infinite;
+}
+
+/* Status explanation tooltip */
+.status-explanation {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
+    margin-bottom: 0.25rem;
+}
+
+.status-explanation::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.status-badge:hover .status-explanation {
+    opacity: 1;
+}
+
+/* Batch processing indicator */
+.batch-processing-indicator {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    background-color: #3b82f6;
+    border: 2px solid white;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* Status badge with integrated progress */
+.status-badge-with-progress {
+    background: linear-gradient(
+        to right,
+        var(--progress-color) var(--progress-width, 0%),
+        var(--bg-color) var(--progress-width, 0%)
+    );
+    transition: background 0.5s ease;
+}
+
+/* Loading skeleton for status badges */
+.status-badge-skeleton {
+    background: linear-gradient(
+        90deg,
+        #f3f4f6 25%,
+        #e5e7eb 50%,
+        #f3f4f6 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    color: transparent;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
