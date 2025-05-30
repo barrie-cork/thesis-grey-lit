@@ -622,7 +622,7 @@ def export_session_data_ajax(request, session_id):
                 'type': activity.action,
                 'type_display': activity.action.replace('_', ' ').title(),
                 'description': activity.description,
-                'performed_by': activity.user.username,
+                'user': activity.user.username,
                 'performed_at': activity.timestamp.isoformat(),
                 'metadata': activity.details,
             }

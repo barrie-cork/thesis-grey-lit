@@ -6,10 +6,13 @@ This module implements comprehensive signal handling for the Review Manager app,
 providing automatic status change tracking, activity logging, and statistics updates.
 """
 
+import json
+import uuid
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.core.serializers.json import DjangoJSONEncoder
 
 from .models import (
     SearchSession, SessionActivity, SessionStatusHistory, 
@@ -17,6 +20,40 @@ from .models import (
 )
 
 User = get_user_model()
+
+class SafeJSONEncoder(DjangoJSONEncoder):
+    """JSON encoder that safely handles UUID and other objects"""
+    def default(self, obj):
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        return super().default(obj)
+
+
+def safe_json_details(details):
+    """Safely convert details dict to JSON-serializable format"""
+    if not details:
+        return {}
+    
+    safe_details = {}
+    for key, value in details.items():
+        if isinstance(value, uuid.UUID):
+            safe_details[key] = str(value)
+        elif hasattr(value, 'isoformat'):  # datetime objects
+            safe_details[key] = value.isoformat()
+        elif isinstance(value, (dict, list)):
+            try:
+                # Try to serialize nested structures
+                json.dumps(value, cls=SafeJSONEncoder)
+                safe_details[key] = value
+            except (TypeError, ValueError):
+                safe_details[key] = str(value)
+        elif isinstance(value, (str, int, float, bool, type(None))):
+            safe_details[key] = value
+        else:
+            # Convert anything else to string
+            safe_details[key] = str(value)
+    
+    return safe_details
 
 
 class StatusChangeSignalHandler:
@@ -106,11 +143,11 @@ class StatusChangeSignalHandler:
             action='CREATED',
             description=f'Session "{instance.title}" was created',
             user=user,
-            details={
+            details=safe_json_details({
                 'initial_status': instance.status,
                 'title': instance.title,
                 'description': instance.description[:100] if instance.description else '',
-            }
+            })
         )
     
     @classmethod
@@ -164,13 +201,13 @@ class StatusChangeSignalHandler:
             user=user,
             old_status=previous_status,
             new_status=instance.status,
-            details={
+            details=safe_json_details({
                 'transition_type': transition_type,
                 'duration_in_previous_status_seconds': duration_in_previous_status.total_seconds(),
                 'is_progression': status_history.is_progression,
                 'is_regression': status_history.is_regression,
                 'is_error_recovery': status_history.is_error_recovery,
-            }
+            })
         )
         
         # Handle special status transitions
@@ -184,10 +221,10 @@ class StatusChangeSignalHandler:
             action='MODIFIED',
             description=f'Session "{instance.title}" was updated',
             user=user,
-            details={
+            details=safe_json_details({
                 'update_type': 'general',
                 'title': instance.title,
-            }
+            })
         )
     
     @classmethod
@@ -268,10 +305,10 @@ class StatusChangeSignalHandler:
             action='SYSTEM',
             description=f'Session "{instance.title}" was archived',
             user=user,
-            details={
+            details=safe_json_details({
                 'action': 'archive',
                 'stats_snapshot': instance.stats,
-            }
+            })
         )
     
     @classmethod
@@ -288,10 +325,10 @@ class StatusChangeSignalHandler:
             action='REVIEW_COMPLETED',
             description=f'Session "{instance.title}" was completed',
             user=user,
-            details={
+            details=safe_json_details({
                 'completion_date': instance.completed_date.isoformat(),
                 'stats_at_completion': instance.stats,
-            }
+            })
         )
     
     @classmethod
@@ -309,11 +346,11 @@ class StatusChangeSignalHandler:
                 action='SYSTEM',
                 description=f'Session "{instance.title}" was restored from archive',
                 user=user,
-                details={
+                details=safe_json_details({
                     'action': 'restore',
                     'archived_at': archive_info.archived_at.isoformat(),
                     'days_archived': archive_info.days_archived,
-                }
+                })
             )
         except SessionArchive.DoesNotExist:
             # Create archive record for tracking purposes
@@ -334,11 +371,11 @@ class StatusChangeSignalHandler:
             action='ERROR',
             description=f'Session "{instance.title}" failed while in {previous_status} status',
             user=user,
-            details={
+            details=safe_json_details({
                 'previous_status': previous_status,
                 'failure_context': getattr(instance, '_failure_reason', ''),
                 'error_details': getattr(instance, '_error_details', {}),
-            }
+            })
         )
     
     @classmethod

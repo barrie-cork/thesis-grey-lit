@@ -46,7 +46,7 @@
         <div class="stat-card">
             <div class="stat-number">
                 {% if activity_stats.recent_activity %}
-                    {{ activity_stats.recent_activity.performed_at|timesince }} ago
+                    {{ activity_stats.recent_activity.timestamp|timesince }} ago
                 {% else %}
                     No activity
                 {% endif %}
@@ -96,23 +96,23 @@
         {% if activities %}
             <div class="timeline">
                 {% for activity in activities %}
-                <div class="timeline-item" data-activity-type="{{ activity.activity_type }}">
+                <div class="timeline-item" data-activity-type="{{ activity.action }}">
                     <div class="timeline-marker">
-                        <i class="activity-icon icon-{{ activity.activity_type|lower }}"></i>
+                        <i class="activity-icon icon-{{ activity.action|lower }}"></i>
                     </div>
                     
                     <div class="timeline-content-item">
                         <div class="timeline-header">
-                            <h4 class="activity-title">{{ activity.get_activity_type_display }}</h4>
+                            <h4 class="activity-title">{{ activity.get_action_display }}</h4>
                             <div class="activity-meta">
                                 <span class="activity-user">
-                                    <i class="icon-user"></i> {{ activity.performed_by.username }}
+                                    <i class="icon-user"></i> {{ activity.user.username }}
                                 </span>
                                 <span class="activity-time">
                                     <i class="icon-clock"></i> 
-                                    <time datetime="{{ activity.performed_at|date:'c' }}" 
-                                          title="{{ activity.performed_at }}">
-                                        {{ activity.performed_at|timesince }} ago
+                                    <time datetime="{{ activity.timestamp|date:'c' }}" 
+                                          title="{{ activity.timestamp }}">
+                                        {{ activity.timestamp|timesince }} ago
                                     </time>
                                 </span>
                             </div>
@@ -137,7 +137,7 @@
                             {% endif %}
                         </div>
                         
-                        {% if activity.activity_type in 'COMMENT,MODIFIED' and user == activity.performed_by %}
+                        {% if activity.action in 'COMMENT,MODIFIED' and user == activity.user %}
                         <div class="timeline-actions">
                             <button class="btn btn-sm btn-outline-danger delete-activity" 
                                     data-activity-id="{{ activity.id }}">

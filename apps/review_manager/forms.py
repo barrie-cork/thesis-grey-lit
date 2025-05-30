@@ -29,6 +29,13 @@ class SessionCreateForm(forms.ModelForm):
         self.fields['description'].label = "Description (Optional)"
         self.fields['description'].help_text = "Add any additional context or objectives"
     
+    def clean_description(self):
+        """Validate description length"""
+        description = self.cleaned_data.get('description', '')
+        if len(description) > 1000:
+            raise ValidationError('Description cannot be longer than 1000 characters.')
+        return description
+    
     def save(self, commit=True, user=None):
         session = super().save(commit=False)
         if user:
@@ -83,6 +90,13 @@ class SessionEditForm(forms.ModelForm):
             raise ValidationError('Title cannot be longer than 200 characters.')
         
         return title
+    
+    def clean_description(self):
+        """Validate description length"""
+        description = self.cleaned_data.get('description', '')
+        if len(description) > 1000:
+            raise ValidationError('Description cannot be longer than 1000 characters.')
+        return description
     
     def save(self, commit=True, user=None):
         """Save with activity logging"""

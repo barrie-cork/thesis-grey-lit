@@ -13,21 +13,35 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--count', type=int, default=10, help='Number of sessions to create')
         parser.add_argument('--username', type=str, default='testuser', help='Username for session owner')
+        parser.add_argument('--clean', action='store_true', help='Clean existing test data first')
 
     def handle(self, *args, **options):
         username = options['username']
         count = options['count']
+        clean = options['clean']
+        
+        if clean:
+            # Clean existing test data
+            self.stdout.write('Cleaning existing test data...')
+            test_sessions = SearchSession.objects.filter(
+                title__icontains='Test',
+                created_by__username=username
+            )
+            deleted_count = test_sessions.count()
+            test_sessions.delete()
+            self.stdout.write(f'Deleted {deleted_count} existing test sessions')
         
         # Get or create user
         try:
             user = User.objects.get(username=username)
+            self.stdout.write(f'Using existing user: {username}')
         except User.DoesNotExist:
             user = User.objects.create_user(
                 username=username,
                 email=f'{username}@example.com',
                 password='testpass123'
             )
-            self.stdout.write(f'Created user: {username}')
+            self.stdout.write(f'Created new user: {username}')
 
         # Sample data
         titles = [
@@ -75,6 +89,7 @@ class Command(BaseCommand):
         
         for i in range(count):
             title = random.choice(titles)
+            # Ensure unique titles
             if SearchSession.objects.filter(title=title, created_by=user).exists():
                 title = f"{title} ({i+1})"
             
@@ -83,27 +98,41 @@ class Command(BaseCommand):
                 description=random.choice(descriptions),
                 status=random.choice(statuses),
                 created_by=user,
-                # Removed PIC framework fields - these belong in Search Strategy app
             )
             
-            # Create activity log
+            # Create activity log using correct field names
             SessionActivity.objects.create(
                 session=session,
-                activity_type=SessionActivity.ActivityType.CREATED,
+                action=SessionActivity.ActivityType.CREATED,  # Use 'action' not 'activity_type'
                 description=f'Session "{session.title}" created by {user.username}',
-                performed_by=user
+                user=user  # Use 'user' not 'performed_by'
             )
             
             # Add some additional activities for non-draft sessions
             if session.status != 'draft':
                 SessionActivity.objects.create(
                     session=session,
-                    activity_type=SessionActivity.ActivityType.STATUS_CHANGED,
+                    action=SessionActivity.ActivityType.STATUS_CHANGED,  # Use 'action'
                     description=f'Status changed from draft to {session.get_status_display()}',
                     old_status='draft',
                     new_status=session.status,
-                    performed_by=user
+                    user=user  # Use 'user'
                 )
+            
+            # Add a few more random activities for some sessions
+            if random.choice([True, False, False]):  # 33% chance
+                activity_types = [
+                    SessionActivity.ActivityType.MODIFIED,
+                    SessionActivity.ActivityType.COMMENT,
+                    SessionActivity.ActivityType.SYSTEM,
+                ]
+                for _ in range(random.randint(1, 3)):
+                    SessionActivity.objects.create(
+                        session=session,
+                        action=random.choice(activity_types),
+                        description=f'Additional activity for testing purposes',
+                        user=user
+                    )
             
             created_sessions.append(session)
         
@@ -118,6 +147,13 @@ class Command(BaseCommand):
         for session in created_sessions:
             status_counts[session.get_status_display()] = status_counts.get(session.get_status_display(), 0) + 1
         
-        self.stdout.write('\nStatus distribution:')
+        self.stdout.write('\n📊 Status distribution:')
         for status, count in status_counts.items():
             self.stdout.write(f'  {status}: {count}')
+        
+        # Display usage instructions
+        self.stdout.write('\n🚀 Next steps:')
+        self.stdout.write('1. Start the server: python manage.py runserver')
+        self.stdout.write('2. Visit: http://localhost:8000/review/')
+        self.stdout.write(f'3. Login with username: {username} (password: testpass123)')
+        self.stdout.write('\n✨ Sample sessions are ready for testing!')

@@ -6,8 +6,9 @@
       "name": "User",
       "app": "accounts",
       "parent_class": "django.contrib.auth.models.AbstractUser",
+      "primary_key": "UUIDField",
       "attributes": {
-        "id": "UUIDField (Primary Key)",
+        "id": "UUIDField (Primary Key, default=uuid.uuid4)",
         "username": "CharField (from AbstractUser, unique)",
         "first_name": "CharField (from AbstractUser, blank)",
         "last_name": "CharField (from AbstractUser, blank)",
@@ -16,507 +17,40 @@
         "is_active": "BooleanField (from AbstractUser, default=True)",
         "date_joined": "DateTimeField (from AbstractUser, auto_now_add)",
         "created_at": "DateTimeField (auto_now_add)",
-        "updated_at": "DateTimeField (auto_now)",
-        "custom_methods": ["get_full_name", "save"]
+        "updated_at": "DateTimeField (auto_now)"
       },
-    {
-      "id": "model:review_manager.SessionStatusHistory",
-      "type": "Model",
-      "name": "SessionStatusHistory",
-      "app": "review_manager",
-      "parent_class": "django.db.models.Model",
-      "attributes": {
-        "id": "AutoField (Primary Key)",
-        "session": "ForeignKey (to review_manager.SearchSession)",
-        "from_status": "CharField (choices: SearchSession.Status, blank)",
-        "to_status": "CharField (choices: SearchSession.Status)",
-        "changed_by": "ForeignKey (to settings.AUTH_USER_MODEL)",
-        "changed_at": "DateTimeField (auto_now_add)",
-        "reason": "TextField (blank)",
-        "metadata": "JSONField (default=dict, blank)",
-        "ip_address": "GenericIPAddressField (null, blank)",
-        "duration_in_previous_status": "DurationField (null, blank)",
-        "custom_methods": ["__str__", "get_transition_display", "is_progression", "is_regression", "is_error_recovery"]
-      },
-      "description": "Model to track detailed history of all status changes for audit purposes."
+      "custom_methods": ["get_full_name", "save"],
+      "description": "Custom User model with UUID primary key for Thesis Grey researchers",
+      "status": "IMPLEMENTED"
     },
-    {
-      "id": "model:review_manager.SessionArchive",
-      "type": "Model",
-      "name": "SessionArchive",
-      "app": "review_manager",
-      "parent_class": "django.db.models.Model",
-      "attributes": {
-        "id": "AutoField (Primary Key)",
-        "session": "OneToOneField (to review_manager.SearchSession)",
-        "archived_by": "ForeignKey (to settings.AUTH_USER_MODEL)",
-        "archived_at": "DateTimeField (auto_now_add)",
-        "archive_reason": "TextField (blank)",
-        "stats_snapshot": "JSONField (default=dict)",
-        "restored_at": "DateTimeField (null, blank)",
-        "restored_by": "ForeignKey (to settings.AUTH_USER_MODEL, null, blank)",
-        "custom_methods": ["__str__", "is_currently_archived", "days_archived"]
-      },
-      "description": "Model to track archiving operations for completed sessions."
-    },
-    {
-      "id": "model:review_manager.UserSessionStats",
-      "type": "Model",
-      "name": "UserSessionStats",
-      "app": "review_manager",
-      "parent_class": "django.db.models.Model",
-      "attributes": {
-        "id": "AutoField (Primary Key)",
-        "user": "OneToOneField (to settings.AUTH_USER_MODEL)",
-        "total_sessions": "PositiveIntegerField (default=0)",
-        "completed_sessions": "PositiveIntegerField (default=0)",
-        "archived_sessions": "PositiveIntegerField (default=0)",
-        "failed_sessions": "PositiveIntegerField (default=0)",
-        "avg_completion_time": "DurationField (null, blank)",
-        "fastest_completion": "DurationField (null, blank)",
-        "total_activities": "PositiveIntegerField (default=0)",
-        "last_activity_date": "DateTimeField (null, blank)",
-        "most_active_day": "CharField (blank)",
-        "most_active_hour": "PositiveSmallIntegerField (null, blank)",
-        "completion_rate": "FloatField (default=0.0)",
-        "productivity_score": "FloatField (default=0.0)",
-        "stats_calculated_at": "DateTimeField (auto_now)",
-        "calculation_metadata": "JSONField (default=dict, blank)",
-        "custom_methods": ["__str__", "calculate_completion_rate", "calculate_productivity_score", "update_user_stats"]
-      },
-      "description": "Model to track user-level statistics and productivity metrics."
-    },
-    {
-      "id": "class:review_manager.StatusChangeSignalHandler",
-      "type": "Class",
-      "name": "StatusChangeSignalHandler",
-      "app": "review_manager",
-      "parent_class": "object",
-      "methods": [
-        "get_client_ip",
-        "pre_save_session",
-        "post_save_session",
-        "_handle_session_creation",
-        "_handle_session_update",
-        "_handle_status_change",
-        "_handle_general_update",
-        "_get_transition_type",
-        "_get_transition_description",
-        "_handle_special_transitions",
-        "_handle_archiving",
-        "_handle_completion",
-        "_handle_archive_restoration",
-        "_handle_failure",
-        "_update_user_statistics"
-      ],
-      "description": "Handles all status change events with comprehensive tracking and validation."
-    },
-    {
-      "id": "class:review_manager.SignalUtils",
-      "type": "Class",
-      "name": "SignalUtils",
-      "app": "review_manager",
-      "parent_class": "object",
-      "methods": [
-        "set_change_context",
-        "clear_change_context"
-      ],
-      "description": "Utility functions for signal handling context management."
-    },
-    {
-      "id": "class:review_manager.SessionChangeTrackingMiddleware",
-      "type": "Middleware",
-      "name": "SessionChangeTrackingMiddleware",
-      "app": "review_manager",
-      "parent_class": "object",
-      "methods": [
-        "__init__",
-        "__call__",
-        "get_current_request",
-        "get_current_user"
-      ],
-      "description": "Middleware to track which user is making changes to sessions."
-    },
-    {
-      "id": "view:review_manager.ActivityTimelineView",
-      "type": "View",
-      "name": "ActivityTimelineView",
-      "app": "review_manager",
-      "parent_class": "django.views.generic.DetailView",
-      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
-      "template_name": "template:review_manager/activity_timeline.html",
-      "context_object_name": "session",
-      "pk_url_kwarg": "session_id",
-      "description": "Interactive activity timeline for a session with filtering and search."
-    },
-    {
-      "id": "view:review_manager.StatusHistoryView",
-      "type": "View",
-      "name": "StatusHistoryView",
-      "app": "review_manager",
-      "parent_class": "django.views.generic.DetailView",
-      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
-      "template_name": "template:review_manager/status_history.html",
-      "context_object_name": "session",
-      "pk_url_kwarg": "session_id",
-      "description": "Detailed status history for a session showing comprehensive audit trail."
-    },
-    {
-      "id": "view:review_manager.ArchiveManagementView",
-      "type": "View",
-      "name": "ArchiveManagementView",
-      "app": "review_manager",
-      "parent_class": "django.views.generic.ListView",
-      "mixins": ["LoginRequiredMixin", "UserFeedbackMixin"],
-      "template_name": "template:review_manager/archive_management.html",
-      "context_object_name": "archived_sessions",
-      "paginate_by": 15,
-      "description": "Comprehensive archive management view with bulk operations and statistics."
-    },
-    {
-      "id": "view:review_manager.ArchiveSessionView",
-      "type": "View",
-      "name": "ArchiveSessionView",
-      "app": "review_manager",
-      "parent_class": "django.views.generic.View",
-      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
-      "description": "Archive a completed session with optional reason."
-    },
-    {
-      "id": "view:review_manager.UnarchiveSessionView",
-      "type": "View",
-      "name": "UnarchiveSessionView",
-      "app": "review_manager",
-      "parent_class": "django.views.generic.View",
-      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
-      "description": "Restore a session from archive."
-    },
-    {
-      "id": "view:review_manager.BulkArchiveView",
-      "type": "View",
-      "name": "BulkArchiveView",
-      "app": "review_manager",
-      "parent_class": "django.views.generic.View",
-      "mixins": ["LoginRequiredMixin"],
-      "description": "Bulk archive multiple completed sessions."
-    },
-    {
-      "id": "view:review_manager.StatsAnalyticsView",
-      "type": "View",
-      "name": "StatsAnalyticsView",
-      "app": "review_manager",
-      "parent_class": "django.views.generic.ListView",
-      "mixins": ["LoginRequiredMixin", "UserFeedbackMixin"],
-      "template_name": "template:review_manager/stats_analytics.html",
-      "context_object_name": "sessions",
-      "description": "Comprehensive statistics and analytics dashboard for user productivity insights."
-    },
-    {
-      "id": "function:review_manager.activity_timeline_ajax",
-      "type": "Function",
-      "name": "activity_timeline_ajax",
-      "app": "review_manager",
-      "decorators": ["login_required"],
-      "description": "Return activity timeline data as JSON for dynamic updates."
-    },
-    {
-      "id": "function:review_manager.delete_activity_ajax",
-      "type": "Function",
-      "name": "delete_activity_ajax",
-      "app": "review_manager",
-      "decorators": ["require_POST", "login_required"],
-      "description": "Delete an activity record (admin only or for corrections)."
-    },
-    {
-      "id": "function:review_manager.user_stats_ajax",
-      "type": "Function",
-      "name": "user_stats_ajax",
-      "app": "review_manager",
-      "decorators": ["login_required"],
-      "description": "Return user statistics as JSON for dashboard widgets."
-    },
-    {
-      "id": "function:review_manager.export_session_data_ajax",
-      "type": "Function",
-      "name": "export_session_data_ajax",
-      "app": "review_manager",
-      "decorators": ["require_POST", "login_required"],
-      "description": "Export session data including activity history and statistics."
-    },
-    {
-      "id": "function:review_manager.productivity_chart_data_ajax",
-      "type": "Function",
-      "name": "productivity_chart_data_ajax",
-      "app": "review_manager",
-      "decorators": ["login_required"],
-      "description": "Return productivity chart data for analytics dashboard."
-    },
-    {
-      "id": "template:review_manager/activity_timeline.html",
-      "type": "Template",
-      "name": "activity_timeline.html",
-      "path": "apps/review_manager/templates/review_manager/activity_timeline.html",
-      "description": "Interactive activity timeline template with filtering and pagination."
-    },
-    {
-      "id": "template:review_manager/status_history.html",
-      "type": "Template",
-      "name": "status_history.html",
-      "path": "apps/review_manager/templates/review_manager/status_history.html",
-      "description": "Detailed status history template showing comprehensive audit trail."
-    },
-    {
-      "id": "template:review_manager/archive_management.html",
-      "type": "Template",
-      "name": "archive_management.html",
-      "path": "apps/review_manager/templates/review_manager/archive_management.html",
-      "description": "Archive management template with search, filtering, and bulk operations."
-    },
-    {
-      "id": "template:review_manager/stats_analytics.html",
-      "type": "Template",
-      "name": "stats_analytics.html",
-      "path": "apps/review_manager/templates/review_manager/stats_analytics.html",
-      "description": "Comprehensive analytics dashboard template with charts and insights."
-    },
-    {
-      "id": "templatetags:review_manager_extras",
-      "type": "TemplateTags",
-      "name": "review_manager_extras",
-      "app": "review_manager",
-      "path": "apps/review_manager/templatetags/review_manager_extras.py",
-      "filters": [
-        "duration_display",
-        "duration_short",
-        "percentage",
-        "status_class",
-        "activity_icon",
-        "get_item",
-        "multiply",
-        "format_number"
-      ],
-      "tags": [
-        "transition_arrow"
-      ],
-      "description": "Custom template tags and filters for Review Manager."
-    },
-    {
-      "id": "url:/review/<int:session_id>/timeline/",
-      "type": "URL",
-      "name": "review_manager:activity_timeline",
-      "path_pattern": "/review/<int:session_id>/timeline/",
-      "description": "URL for activity timeline view."
-    },
-    {
-      "id": "url:/review/<int:session_id>/history/",
-      "type": "URL",
-      "name": "review_manager:status_history",
-      "path_pattern": "/review/<int:session_id>/history/",
-      "description": "URL for status history view."
-    },
-    {
-      "id": "url:/review/archives/",
-      "type": "URL",
-      "name": "review_manager:archive_management",
-      "path_pattern": "/review/archives/",
-      "description": "URL for archive management view."
-    },
-    {
-      "id": "url:/review/<int:session_id>/archive/",
-      "type": "URL",
-      "name": "review_manager:archive_session",
-      "path_pattern": "/review/<int:session_id>/archive/",
-      "description": "URL for archiving a session."
-    },
-    {
-      "id": "url:/review/<int:session_id>/unarchive/",
-      "type": "URL",
-      "name": "review_manager:unarchive_session",
-      "path_pattern": "/review/<int:session_id>/unarchive/",
-      "description": "URL for unarchiving a session."
-    },
-    {
-      "id": "url:/review/bulk-archive/",
-      "type": "URL",
-      "name": "review_manager:bulk_archive",
-      "path_pattern": "/review/bulk-archive/",
-      "description": "URL for bulk archive operations."
-    },
-    {
-      "id": "url:/review/analytics/",
-      "type": "URL",
-      "name": "review_manager:stats_analytics",
-      "path_pattern": "/review/analytics/",
-      "description": "URL for analytics dashboard."
-    },
-    {
-      "id": "css:review_manager/css/base.css",
-      "type": "CSS",
-      "name": "base.css",
-      "path": "apps/review_manager/static/review_manager/css/base.css",
-      "description": "Base CSS styles for Review Manager with Sprint 6 advanced styling."
-    },
-    {
-      "id": "css:review_manager/css/timeline.css",
-      "type": "CSS",
-      "name": "timeline.css",
-      "path": "apps/review_manager/static/review_manager/css/timeline.css",
-      "description": "Specific CSS styles for activity timeline."
-    },
-    {
-      "id": "css:review_manager/css/status-history.css",
-      "type": "CSS",
-      "name": "status-history.css",
-      "path": "apps/review_manager/static/review_manager/css/status-history.css",
-      "description": "Specific CSS styles for status history views."
-    },
-      "description": "Custom User model for Thesis Grey researchers."
-    },
-    {
-      "id": "form:accounts.SignUpForm",
-      "type": "Form",
-      "name": "SignUpForm",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.forms.UserCreationForm",
-      "model": "model:accounts.User",
-      "fields": ["username", "email", "password1", "password2"],
-      "custom_methods": ["clean_email"]
-    },
-    {
-      "id": "form:accounts.ProfileForm",
-      "type": "Form",
-      "name": "ProfileForm",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.forms.UserChangeForm",
-      "model": "model:accounts.User",
-      "fields": ["username", "email", "first_name", "last_name"],
-      "custom_methods": ["clean_email"]
-    },
-    {
-      "id": "form:accounts.CustomAuthenticationForm",
-      "type": "Form",
-      "name": "CustomAuthenticationForm",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.forms.AuthenticationForm",
-      "fields": ["username (or email)", "password", "remember_me"],
-      "custom_methods": ["clean"]
-    },
-    {
-      "id": "view:accounts.SignUpView",
-      "type": "View",
-      "name": "SignUpView",
-      "app": "accounts",
-      "parent_class": "django.views.generic.CreateView",
-      "form_class": "form:accounts.SignUpForm",
-      "template_name": "template:accounts/signup.html",
-      "success_url_name": "accounts:profile"
-    },
-    {
-      "id": "view:accounts.ProfileView",
-      "type": "View",
-      "name": "ProfileView",
-      "app": "accounts",
-      "parent_class": "django.views.generic.UpdateView",
-      "mixins": ["django.contrib.auth.mixins.LoginRequiredMixin"],
-      "form_class": "form:accounts.ProfileForm",
-      "template_name": "template:accounts/profile.html",
-      "success_url_name": "accounts:profile",
-      "model": "model:accounts.User"
-    },
-    {
-      "id": "view:accounts.CustomLoginView",
-      "type": "View",
-      "name": "CustomLoginView",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.views.LoginView",
-      "form_class": "form:accounts.CustomAuthenticationForm",
-      "template_name": "template:accounts/login.html"
-    },
-    {
-      "id": "view:accounts.CustomLogoutView",
-      "type": "View",
-      "name": "CustomLogoutView",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.views.LogoutView",
-      "next_page_url_name": "accounts:login"
-    },
-    {
-      "id": "view:accounts.CustomPasswordResetView",
-      "type": "View",
-      "name": "CustomPasswordResetView",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.views.PasswordResetView",
-      "template_name": "template:accounts/password_reset.html",
-      "email_template_name": "template:accounts/password_reset_email.html",
-      "subject_template_name": "template:accounts/password_reset_subject.txt",
-      "success_url_name": "accounts:password_reset_done"
-    },
-    {
-      "id": "view:accounts.CustomPasswordResetDoneView",
-      "type": "View",
-      "name": "CustomPasswordResetDoneView",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.views.PasswordResetDoneView",
-      "template_name": "template:accounts/password_reset_done.html"
-    },
-    {
-      "id": "view:accounts.CustomPasswordResetConfirmView",
-      "type": "View",
-      "name": "CustomPasswordResetConfirmView",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.views.PasswordResetConfirmView",
-      "template_name": "template:accounts/password_reset_confirm.html",
-      "success_url_name": "accounts:password_reset_complete"
-    },
-    {
-      "id": "view:accounts.CustomPasswordResetCompleteView",
-      "type": "View",
-      "name": "CustomPasswordResetCompleteView",
-      "app": "accounts",
-      "parent_class": "django.contrib.auth.views.PasswordResetCompleteView",
-      "template_name": "template:accounts/password_reset_complete.html"
-    },
-    { "id": "template:accounts/signup.html", "type": "Template", "name": "signup.html", "path": "apps/accounts/templates/accounts/signup.html" },
-    { "id": "template:accounts/profile.html", "type": "Template", "name": "profile.html", "path": "apps/accounts/templates/accounts/profile.html" },
-    { "id": "template:accounts/login.html", "type": "Template", "name": "login.html", "path": "apps/accounts/templates/accounts/login.html" },
-    { "id": "template:accounts/password_reset.html", "type": "Template", "name": "password_reset.html", "path": "apps/accounts/templates/accounts/password_reset.html" },
-    { "id": "template:accounts/password_reset_done.html", "type": "Template", "name": "password_reset_done.html", "path": "apps/accounts/templates/accounts/password_reset_done.html" },
-    { "id": "template:accounts/password_reset_confirm.html", "type": "Template", "name": "password_reset_confirm.html", "path": "apps/accounts/templates/accounts/password_reset_confirm.html" },
-    { "id": "template:accounts/password_reset_complete.html", "type": "Template", "name": "password_reset_complete.html", "path": "apps/accounts/templates/accounts/password_reset_complete.html" },
-    { "id": "template:accounts/password_reset_email.html", "type": "Template", "name": "password_reset_email.html", "path": "apps/accounts/templates/accounts/password_reset_email.html" },
-    { "id": "template:accounts/password_reset_subject.txt", "type": "Template", "name": "password_reset_subject.txt", "path": "apps/accounts/templates/accounts/password_reset_subject.txt" },
-    { "id": "url:/accounts/signup/", "type": "URL", "name": "accounts:signup", "path_pattern": "/accounts/signup/" },
-    { "id": "url:/accounts/profile/", "type": "URL", "name": "accounts:profile", "path_pattern": "/accounts/profile/" },
-    { "id": "url:/accounts/login/", "type": "URL", "name": "accounts:login", "path_pattern": "/accounts/login/" },
-    { "id": "url:/accounts/logout/", "type": "URL", "name": "accounts:logout", "path_pattern": "/accounts/logout/" },
-    { "id": "url:/accounts/password-reset/", "type": "URL", "name": "accounts:password_reset", "path_pattern": "/accounts/password-reset/" },
-    { "id": "url:/accounts/password-reset/done/", "type": "URL", "name": "accounts:password_reset_done", "path_pattern": "/accounts/password-reset/done/" },
-    { "id": "url:/accounts/reset/<uidb64>/<token>/", "type": "URL", "name": "accounts:password_reset_confirm", "path_pattern": "/accounts/reset/<uidb64>/<token>/" },
-    { "id": "url:/accounts/reset/done/", "type": "URL", "name": "accounts:password_reset_complete", "path_pattern": "/accounts/reset/done/" },
-    { "id": "setting:AUTH_USER_MODEL", "type": "Setting", "name": "AUTH_USER_MODEL", "value": "accounts.User", "file": "thesis_grey_project/settings/base.py" },
-    { "id": "setting:LOGIN_URL", "type": "Setting", "name": "LOGIN_URL", "value": "accounts:login", "file": "thesis_grey_project/settings/base.py" },
-    { "id": "setting:LOGIN_REDIRECT_URL", "type": "Setting", "name": "LOGIN_REDIRECT_URL", "value": "accounts:profile", "file": "thesis_grey_project/settings/base.py" },
-    { "id": "setting:STATIC_URL", "type": "Setting", "name": "STATIC_URL", "value": "static/", "file": "thesis_grey_project/settings/base.py" },
-    { "id": "setting:EMAIL_BACKEND", "type": "Setting", "name": "EMAIL_BACKEND", "value": "django.core.mail.backends.console.EmailBackend", "file": "thesis_grey_project/settings/local.py" },
     {
       "id": "model:review_manager.SearchSession",
       "type": "Model",
       "name": "SearchSession",
       "app": "review_manager",
       "parent_class": "django.db.models.Model",
+      "primary_key": "UUIDField",
       "attributes": {
-        "id": "AutoField (Primary Key)",
-        "title": "CharField",
-        "description": "TextField",
-        "status": "CharField (choices: SearchSession.Status)",
-        "created_by": "ForeignKey (to settings.AUTH_USER_MODEL)",
-        "created_at": "DateTimeField (auto_now_add)",
-        "updated_at": "DateTimeField (auto_now)",
-        "start_date": "DateTimeField (null, blank)",
-        "completed_date": "DateTimeField (null, blank)",
-        "custom_methods": ["__str__", "can_transition_to"]
+        "id": "UUIDField (Primary Key, default=uuid.uuid4)",
+        "title": "CharField (max_length=200)",
+        "description": "TextField (blank=True)",
+        "status": "CharField (choices=Status.choices, default=DRAFT)",
+        "created_by": "ForeignKey (to settings.AUTH_USER_MODEL, related_name='created_sessions')",
+        "visibility": "CharField (choices=Visibility.choices, default=PRIVATE)",
+        "permissions": "JSONField (default=dict, blank=True)",
+        "created_at": "DateTimeField (auto_now_add=True)",
+        "updated_at": "DateTimeField (auto_now=True)",
+        "updated_by": "ForeignKey (to settings.AUTH_USER_MODEL, null=True, blank=True, related_name='updated_sessions')",
+        "start_date": "DateTimeField (null=True, blank=True)",
+        "completed_date": "DateTimeField (null=True, blank=True)"
       },
-      "description": "Model to track and manage literature review search sessions."
+      "choices": {
+        "Status": ["DRAFT", "STRATEGY_READY", "EXECUTING", "PROCESSING", "READY_FOR_REVIEW", "IN_REVIEW", "COMPLETED", "FAILED", "ARCHIVED"],
+        "Visibility": ["PRIVATE", "TEAM", "PUBLIC"]
+      },
+      "custom_methods": ["__str__", "can_transition_to", "get_absolute_url", "stats", "can_be_deleted", "can_be_archived", "can_be_duplicated"],
+      "description": "Core model for literature review search sessions with workflow management",
+      "status": "IMPLEMENTED"
     },
     {
       "id": "model:review_manager.SessionActivity",
@@ -524,19 +58,126 @@
       "name": "SessionActivity",
       "app": "review_manager",
       "parent_class": "django.db.models.Model",
+      "primary_key": "UUIDField",
       "attributes": {
-        "id": "AutoField (Primary Key)",
-        "session": "ForeignKey (to review_manager.SearchSession)",
-        "activity_type": "CharField (choices: SessionActivity.ActivityType)",
-        "description": "TextField",
-        "old_status": "CharField (null, blank, choices: SearchSession.Status)",
-        "new_status": "CharField (null, blank, choices: SearchSession.Status)",
-        "performed_by": "ForeignKey (to settings.AUTH_USER_MODEL)",
-        "performed_at": "DateTimeField (auto_now_add)",
-        "metadata": "JSONField (null, blank)",
-        "custom_methods": ["__str__"]
+        "id": "UUIDField (Primary Key, default=uuid.uuid4)",
+        "session": "ForeignKey (to SearchSession, related_name='activities')",
+        "action": "CharField (max_length=50)",
+        "description": "TextField (blank=True)",
+        "old_status": "CharField (choices=SearchSession.Status.choices, null=True, blank=True)",
+        "new_status": "CharField (choices=SearchSession.Status.choices, null=True, blank=True)",
+        "user": "ForeignKey (to settings.AUTH_USER_MODEL, related_name='session_activities')",
+        "timestamp": "DateTimeField (auto_now_add=True)",
+        "details": "JSONField (default=dict, blank=True)"
       },
-      "description": "Model to log activities and changes in search sessions."
+      "choices": {
+        "ActivityType": ["CREATED", "STATUS_CHANGED", "MODIFIED", "STRATEGY_DEFINED", "SEARCH_EXECUTED", "RESULTS_PROCESSED", "REVIEW_STARTED", "REVIEW_COMPLETED", "COMMENT", "ERROR", "SYSTEM", "ERROR_RECOVERY", "RECOVERY_ATTEMPT", "FAILED"]
+      },
+      "custom_methods": ["__str__", "log_activity"],
+      "description": "Audit trail for all session activities and changes",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "model:review_manager.SessionStatusHistory",
+      "type": "Model",
+      "name": "SessionStatusHistory",
+      "app": "review_manager",
+      "parent_class": "django.db.models.Model",
+      "primary_key": "UUIDField",
+      "attributes": {
+        "id": "UUIDField (Primary Key, default=uuid.uuid4)",
+        "session": "ForeignKey (to SearchSession, related_name='status_history')",
+        "from_status": "CharField (choices=SearchSession.Status.choices, blank=True)",
+        "to_status": "CharField (choices=SearchSession.Status.choices)",
+        "changed_by": "ForeignKey (to settings.AUTH_USER_MODEL, related_name='status_changes')",
+        "changed_at": "DateTimeField (auto_now_add=True)",
+        "reason": "TextField (blank=True)",
+        "metadata": "JSONField (default=dict, blank=True)",
+        "ip_address": "GenericIPAddressField (null=True, blank=True)",
+        "duration_in_previous_status": "DurationField (null=True, blank=True)"
+      },
+      "custom_methods": ["__str__", "get_transition_display"],
+      "properties": ["is_progression", "is_regression", "is_error_recovery"],
+      "description": "Detailed audit trail of status changes with metadata",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "model:review_manager.SessionArchive",
+      "type": "Model",
+      "name": "SessionArchive",
+      "app": "review_manager",
+      "parent_class": "django.db.models.Model",
+      "primary_key": "UUIDField",
+      "attributes": {
+        "id": "UUIDField (Primary Key, default=uuid.uuid4)",
+        "session": "OneToOneField (to SearchSession, related_name='archive_info')",
+        "archived_by": "ForeignKey (to settings.AUTH_USER_MODEL, related_name='archived_sessions')",
+        "archived_at": "DateTimeField (auto_now_add=True)",
+        "archive_reason": "TextField (blank=True)",
+        "stats_snapshot": "JSONField (default=dict)",
+        "restored_at": "DateTimeField (null=True, blank=True)",
+        "restored_by": "ForeignKey (to settings.AUTH_USER_MODEL, null=True, blank=True, related_name='restored_sessions')"
+      },
+      "custom_methods": ["__str__"],
+      "properties": ["is_currently_archived", "days_archived"],
+      "description": "Archive tracking for completed sessions",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "model:review_manager.UserSessionStats",
+      "type": "Model",
+      "name": "UserSessionStats",
+      "app": "review_manager",
+      "parent_class": "django.db.models.Model",
+      "primary_key": "UUIDField",
+      "attributes": {
+        "id": "UUIDField (Primary Key, default=uuid.uuid4)",
+        "user": "OneToOneField (to settings.AUTH_USER_MODEL, related_name='session_stats')",
+        "total_sessions": "PositiveIntegerField (default=0)",
+        "completed_sessions": "PositiveIntegerField (default=0)",
+        "archived_sessions": "PositiveIntegerField (default=0)",
+        "failed_sessions": "PositiveIntegerField (default=0)",
+        "avg_completion_time": "DurationField (null=True, blank=True)",
+        "fastest_completion": "DurationField (null=True, blank=True)",
+        "total_activities": "PositiveIntegerField (default=0)",
+        "last_activity_date": "DateTimeField (null=True, blank=True)",
+        "most_active_day": "CharField (max_length=10, blank=True)",
+        "most_active_hour": "PositiveSmallIntegerField (null=True, blank=True)",
+        "completion_rate": "FloatField (default=0.0)",
+        "productivity_score": "FloatField (default=0.0)",
+        "stats_calculated_at": "DateTimeField (auto_now=True)",
+        "calculation_metadata": "JSONField (default=dict, blank=True)",
+        "notification_preferences": "JSONField (default=dict, blank=True)"
+      },
+      "custom_methods": ["__str__", "calculate_completion_rate", "calculate_productivity_score", "update_user_stats"],
+      "description": "User productivity metrics and analytics",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "class:review_manager.SessionStatusManager",
+      "type": "Class",
+      "name": "SessionStatusManager",
+      "app": "review_manager",
+      "parent_class": "object",
+      "methods": ["can_transition", "get_next_allowed_statuses", "validate_transition"],
+      "attributes": {
+        "ALLOWED_TRANSITIONS": "dict - Workflow transition rules"
+      },
+      "description": "Manages status transitions and workflow validation",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "class:review_manager.ErrorRecoveryManager",
+      "type": "Class",
+      "name": "ErrorRecoveryManager",
+      "app": "review_manager",
+      "parent_class": "object",
+      "methods": ["get_recovery_options", "get_error_prevention_tips", "log_recovery_attempt", "get_recovery_success_rate"],
+      "attributes": {
+        "RECOVERY_STRATEGIES": "dict - Error recovery strategy definitions"
+      },
+      "description": "Provides error recovery suggestions and handling",
+      "status": "IMPLEMENTED"
     },
     {
       "id": "form:review_manager.SessionCreateForm",
@@ -544,37 +185,328 @@
       "name": "SessionCreateForm",
       "app": "review_manager",
       "parent_class": "django.forms.ModelForm",
-      "model": "model:review_manager.SearchSession",
+      "model": "SearchSession",
       "fields": ["title", "description"],
-      "widgets_customized": true,
       "custom_methods": ["__init__", "save"],
-      "description": "Form for the initial creation of a SearchSession, capturing title and description."
+      "description": "Form for creating new search sessions",
+      "status": "IMPLEMENTED"
     },
     {
-      "id": "view:review_manager.session_create_view",
+      "id": "form:review_manager.SessionEditForm",
+      "type": "Form",
+      "name": "SessionEditForm",
+      "app": "review_manager",
+      "parent_class": "django.forms.ModelForm",
+      "model": "SearchSession",
+      "fields": ["title", "description"],
+      "custom_methods": ["save"],
+      "description": "Form for editing existing sessions",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "view:review_manager.DashboardView",
       "type": "View",
+      "name": "DashboardView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.ListView",
+      "mixins": ["LoginRequiredMixin", "SessionNavigationMixin", "UserFeedbackMixin"],
+      "template_name": "review_manager/dashboard.html",
+      "context_object_name": "sessions",
+      "paginate_by": 12,
+      "custom_methods": ["get_queryset", "get_context_data"],
+      "description": "Main dashboard with filtering, search, and session management",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "view:review_manager.SessionDetailView",
+      "type": "View",
+      "name": "SessionDetailView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.DetailView",
+      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin", "SessionNavigationMixin"],
+      "template_name": "review_manager/session_detail.html",
+      "context_object_name": "session",
+      "pk_url_kwarg": "session_id",
+      "custom_methods": ["test_func", "get_context_data"],
+      "description": "Detailed session view with navigation and statistics",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "view:review_manager.SessionUpdateView",
+      "type": "View",
+      "name": "SessionUpdateView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.UpdateView",
+      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
+      "form_class": "SessionEditForm",
+      "template_name": "review_manager/session_edit.html",
+      "pk_url_kwarg": "session_id",
+      "custom_methods": ["test_func", "form_valid", "get_success_url"],
+      "description": "Session editing view with validation",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "view:review_manager.SessionDeleteView",
+      "type": "View",
+      "name": "SessionDeleteView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.DeleteView",
+      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
+      "template_name": "review_manager/session_confirm_delete.html",
+      "pk_url_kwarg": "session_id",
+      "success_url": "review_manager:dashboard",
+      "custom_methods": ["test_func", "delete"],
+      "description": "Session deletion (draft sessions only)",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "view:review_manager.DuplicateSessionView",
+      "type": "View",
+      "name": "DuplicateSessionView",
+      "app": "review_manager",
+      "parent_class": "django.views.generic.View",
+      "mixins": ["LoginRequiredMixin", "UserPassesTestMixin"],
+      "custom_methods": ["get_object", "test_func", "post"],
+      "description": "Creates copy of existing session",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "function:review_manager.session_create_view",
+      "type": "Function",
       "name": "session_create_view",
       "app": "review_manager",
-      "parent_class": "Function-based view",
       "decorators": ["login_required"],
-      "form_class": "form:review_manager.SessionCreateForm",
-      "template_name": "template:review_manager/session_create.html",
-      "success_url_name": "search_strategy:define",
-      "description": "Handles the creation of new search sessions."
+      "form_class": "SessionCreateForm",
+      "template_name": "review_manager/session_create.html",
+      "description": "Function-based view for session creation",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "function:review_manager.session_stats_ajax",
+      "type": "Function",
+      "name": "session_stats_ajax",
+      "app": "review_manager",
+      "decorators": ["login_required"],
+      "description": "Returns session statistics as JSON",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "function:review_manager.archive_session_ajax",
+      "type": "Function",
+      "name": "archive_session_ajax",
+      "app": "review_manager",
+      "decorators": ["require_POST", "login_required"],
+      "description": "Archives a completed session via AJAX",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "mixin:review_manager.SessionNavigationMixin",
+      "type": "Mixin",
+      "name": "SessionNavigationMixin",
+      "app": "review_manager",
+      "methods": ["get_session_next_url", "get_session_stats"],
+      "description": "Smart navigation based on session status",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "management_command:review_manager.create_sample_sessions",
+      "type": "ManagementCommand",
+      "name": "create_sample_sessions",
+      "app": "review_manager",
+      "path": "apps/review_manager/management/commands/create_sample_sessions.py",
+      "arguments": ["--count", "--username", "--clean"],
+      "description": "Creates sample session data for testing",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "template:review_manager/dashboard.html",
+      "type": "Template",
+      "name": "dashboard.html",
+      "path": "apps/review_manager/templates/review_manager/dashboard.html",
+      "features": ["Real-time status monitoring", "Advanced filtering", "Search functionality", "Responsive grid layout"],
+      "description": "Main dashboard template with advanced features",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "template:review_manager/session_detail.html",
+      "type": "Template",
+      "name": "session_detail.html",
+      "path": "apps/review_manager/templates/review_manager/session_detail.html",
+      "description": "Detailed session view template",
+      "status": "IMPLEMENTED"
     },
     {
       "id": "template:review_manager/session_create.html",
       "type": "Template",
       "name": "session_create.html",
       "path": "apps/review_manager/templates/review_manager/session_create.html",
-      "description": "Template for creating a new search session."
+      "description": "Session creation form template",
+      "status": "IMPLEMENTED"
     },
     {
-      "id": "url:/review_manager/create/",
+      "id": "template:review_manager/session_edit.html",
+      "type": "Template",
+      "name": "session_edit.html",
+      "path": "apps/review_manager/templates/review_manager/session_edit.html",
+      "description": "Session editing form template",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "template:review_manager/session_confirm_delete.html",
+      "type": "Template",
+      "name": "session_confirm_delete.html",
+      "path": "apps/review_manager/templates/review_manager/session_confirm_delete.html",
+      "description": "Session deletion confirmation template",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "template:review_manager/base.html",
+      "type": "Template",
+      "name": "base.html",
+      "path": "apps/review_manager/templates/review_manager/base.html",
+      "description": "Base template for review manager",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "templatetags:review_manager_extras",
+      "type": "TemplateTags",
+      "name": "review_manager_extras",
+      "app": "review_manager",
+      "path": "apps/review_manager/templatetags/review_manager_extras.py",
+      "filters": ["duration_display", "status_class", "activity_icon"],
+      "description": "Custom template tags and filters",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "static:review_manager/css/dashboard.css",
+      "type": "CSS",
+      "name": "dashboard.css",
+      "path": "apps/review_manager/static/review_manager/css/dashboard.css",
+      "description": "Dashboard-specific styling",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "static:review_manager/css/status_indicators.css",
+      "type": "CSS",
+      "name": "status_indicators.css",
+      "path": "apps/review_manager/static/review_manager/css/status_indicators.css",
+      "description": "Status indicator styling",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "static:review_manager/js/dashboard.js",
+      "type": "JavaScript",
+      "name": "dashboard.js",
+      "path": "apps/review_manager/static/review_manager/js/dashboard.js",
+      "description": "Dashboard interactivity and AJAX functionality",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "url:/review/",
+      "type": "URL",
+      "name": "review_manager:dashboard",
+      "path_pattern": "/review/",
+      "view": "DashboardView",
+      "description": "Main dashboard URL",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "url:/review/create/",
       "type": "URL",
       "name": "review_manager:create_session",
-      "path_pattern": "/review_manager/create/",
-      "description": "URL for creating a new search session."
+      "path_pattern": "/review/create/",
+      "view": "session_create_view",
+      "description": "Session creation URL",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "url:/review/<uuid:session_id>/",
+      "type": "URL",
+      "name": "review_manager:session_detail",
+      "path_pattern": "/review/<uuid:session_id>/",
+      "view": "SessionDetailView",
+      "description": "Session detail URL",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "url:/review/<uuid:session_id>/edit/",
+      "type": "URL",
+      "name": "review_manager:edit_session",
+      "path_pattern": "/review/<uuid:session_id>/edit/",
+      "view": "SessionUpdateView",
+      "description": "Session edit URL",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "url:/review/<uuid:session_id>/delete/",
+      "type": "URL",
+      "name": "review_manager:delete_session",
+      "path_pattern": "/review/<uuid:session_id>/delete/",
+      "view": "SessionDeleteView",
+      "description": "Session delete URL",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "url:/review/<uuid:session_id>/duplicate/",
+      "type": "URL",
+      "name": "review_manager:duplicate_session",
+      "path_pattern": "/review/<uuid:session_id>/duplicate/",
+      "view": "DuplicateSessionView",
+      "description": "Session duplicate URL",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "setting:AUTH_USER_MODEL",
+      "type": "Setting",
+      "name": "AUTH_USER_MODEL",
+      "value": "accounts.User",
+      "file": "thesis_grey_project/settings/base.py",
+      "description": "Custom User model configuration",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "setting:LOGIN_REDIRECT_URL",
+      "type": "Setting",
+      "name": "LOGIN_REDIRECT_URL",
+      "value": "review_manager:dashboard",
+      "file": "thesis_grey_project/settings/base.py",
+      "description": "Post-login redirect configuration",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "app:search_strategy",
+      "type": "App",
+      "name": "search_strategy",
+      "description": "Search strategy definition and PIC framework management",
+      "status": "PLANNED"
+    },
+    {
+      "id": "app:serp_execution",
+      "type": "App",
+      "name": "serp_execution",
+      "description": "Search execution and results retrieval",
+      "status": "PLANNED"
+    },
+    {
+      "id": "app:results_manager",
+      "type": "App",
+      "name": "results_manager",
+      "description": "Results processing and deduplication",
+      "status": "PLANNED"
+    },
+    {
+      "id": "app:review_results",
+      "type": "App",
+      "name": "review_results",
+      "description": "Results review and screening workflow",
+      "status": "PLANNED"
+    },
+    {
+      "id": "app:reporting",
+      "type": "App",
+      "name": "reporting",
+      "description": "Report generation and export functionality",
+      "status": "PLANNED"
     }
   ]
 }
