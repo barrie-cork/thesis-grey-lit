@@ -61,13 +61,12 @@ This Django application helps researchers:
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd thesis-grey-lit
+cd /mnt/d/Python/Projects/thesis-grey-lit
 
 # Create and activate virtual environment
 python -m venv venv
 
-# Windows
-venv\\Scripts\\activate
+
 
 # Linux/Mac
 source venv/bin/activate

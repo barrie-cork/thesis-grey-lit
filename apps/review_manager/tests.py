@@ -43,9 +43,10 @@ class DashboardViewTests(TestCase):
     def test_dashboard_shows_correct_stats(self):
         """Test that dashboard shows correct statistics"""
         response = self.client.get(reverse('review_manager:dashboard'))
-        self.assertContains(response, '<strong>2</strong> Total')
-        self.assertContains(response, '<strong>2</strong> Active')
-        self.assertContains(response, '<strong>0</strong> Completed')
+        # Updated to match current template structure with id attributes
+        self.assertContains(response, 'id="total-sessions">2<')
+        self.assertContains(response, 'id="active-sessions">2<')
+        self.assertContains(response, 'id="completed-sessions">0<')
 
     def test_dashboard_search_functionality(self):
         """Test dashboard search works correctly"""
@@ -145,21 +146,22 @@ class SessionNavigationTests(TestCase):
     def test_session_navigation_by_status(self):
         """Test UC-1.2 smart navigation by status"""
         statuses_and_expected = [
-            ('draft', 'Complete Search Strategy'),
+            ('draft', 'Define Strategy'),
             ('strategy_ready', 'Execute Searches'),
             ('ready_for_review', 'Start Review'),
             ('completed', 'View Report'),
         ]
         
         for status, expected_text in statuses_and_expected:
-            session = SearchSession.objects.create(
-                title=f'Test {status}',
-                status=status,
-                created_by=self.user
-            )
-            
-            response = self.client.get(reverse('review_manager:dashboard'))
-            self.assertContains(response, expected_text)
+            with self.subTest(status=status):
+                session = SearchSession.objects.create(
+                    title=f'Test {status}',
+                    status=status,
+                    created_by=self.user
+                )
+                
+                response = self.client.get(reverse('review_manager:dashboard'))
+                self.assertContains(response, expected_text)
 
 
 class SessionPermissionTests(TestCase):

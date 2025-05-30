@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-playwright"
+      ]
+    },
+    "perplexity-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@alcova-ai/perplexity-mcp",
+        "--model",
+        "sonar-pro",
+        "--reasoning-model",
+        "sonar-reasoning-pro"
+      ],
+      "env": {
+        "PERPLEXITY_API_KEY": "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"
+      }
+    }
+  }
+}

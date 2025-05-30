@@ -1,121 +1,442 @@
 {
   "relations": [
-    { "source": "form:accounts.SignUpForm", "target": "model:accounts.User", "type": "BASED_ON_MODEL" },
-    { "source": "form:accounts.ProfileForm", "target": "model:accounts.User", "type": "BASED_ON_MODEL" },
-    { "source": "view:accounts.SignUpView", "target": "form:accounts.SignUpForm", "type": "USES_FORM" },
-    { "source": "view:accounts.SignUpView", "target": "template:accounts/signup.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:accounts.SignUpView", "target": "model:accounts.User", "type": "MANAGES_MODEL_INSTANCE" },
-    { "source": "view:accounts.ProfileView", "target": "form:accounts.ProfileForm", "type": "USES_FORM" },
-    { "source": "view:accounts.ProfileView", "target": "template:accounts/profile.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:accounts.ProfileView", "target": "model:accounts.User", "type": "MANAGES_MODEL_INSTANCE" },
-    { "source": "view:accounts.CustomLoginView", "target": "form:accounts.CustomAuthenticationForm", "type": "USES_FORM" },
-    { "source": "view:accounts.CustomLoginView", "target": "template:accounts/login.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:accounts.CustomPasswordResetView", "target": "template:accounts/password_reset.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:accounts.CustomPasswordResetView", "target": "template:accounts/password_reset_email.html", "type": "USES_EMAIL_TEMPLATE" },
-    { "source": "view:accounts.CustomPasswordResetView", "target": "template:accounts/password_reset_subject.txt", "type": "USES_SUBJECT_TEMPLATE" },
-    { "source": "view:accounts.CustomPasswordResetDoneView", "target": "template:accounts/password_reset_done.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:accounts.CustomPasswordResetConfirmView", "target": "template:accounts/password_reset_confirm.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:accounts.CustomPasswordResetCompleteView", "target": "template:accounts/password_reset_complete.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "url:/accounts/signup/", "target": "view:accounts.SignUpView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/accounts/profile/", "target": "view:accounts.ProfileView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/accounts/login/", "target": "view:accounts.CustomLoginView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/accounts/logout/", "target": "view:accounts.CustomLogoutView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/accounts/password-reset/", "target": "view:accounts.CustomPasswordResetView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/accounts/password-reset/done/", "target": "view:accounts.CustomPasswordResetDoneView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/accounts/reset/<uidb64>/<token>/", "target": "view:accounts.CustomPasswordResetConfirmView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/accounts/reset/done/", "target": "view:accounts.CustomPasswordResetCompleteView", "type": "ROUTES_TO_VIEW" },
-    { "source": "setting:AUTH_USER_MODEL", "target": "model:accounts.User", "type": "DEFINES_MODEL_REFERENCE" },
-    { "source": "setting:LOGIN_URL", "target": "url:/accounts/login/", "type": "DEFINES_URL_REFERENCE" },
-    { "source": "setting:LOGIN_REDIRECT_URL", "target": "url:/accounts/profile/", "type": "DEFINES_URL_REFERENCE" },
-    { "source": "view:accounts.SignUpView", "target": "view:accounts.ProfileView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:profile"},
-    { "source": "view:accounts.ProfileView", "target": "view:accounts.ProfileView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:profile"},
-    { "source": "view:accounts.CustomLogoutView", "target": "view:accounts.CustomLoginView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:login"},
-    { "source": "view:accounts.CustomPasswordResetView", "target": "view:accounts.CustomPasswordResetDoneView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:password_reset_done"},
-    { "source": "view:accounts.CustomPasswordResetConfirmView", "target": "view:accounts.CustomPasswordResetCompleteView", "type": "REDIRECTS_TO_URL_NAME", "via": "accounts:password_reset_complete"},
-    { "source": "model:review_manager.SearchSession", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "created_by" },
-    { "source": "model:review_manager.SessionActivity", "target": "model:review_manager.SearchSession", "type": "FOREIGN_KEY", "field_name": "session" },
-    { "source": "model:review_manager.SessionActivity", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "performed_by" },
-    { "source": "form:review_manager.SessionCreateForm", "target": "model:review_manager.SearchSession", "type": "BASED_ON_MODEL" },
-    { "source": "form:review_manager.SessionCreateForm", "target": "model:review_manager.SessionActivity", "type": "CREATES_MODEL_INSTANCE_IN_METHOD", "method_name": "save" },
-    { "source": "view:review_manager.session_create_view", "target": "form:review_manager.SessionCreateForm", "type": "USES_FORM" },
-    { "source": "view:review_manager.session_create_view", "target": "template:review_manager/session_create.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:review_manager.session_create_view", "target": "url:search_strategy:define", "type": "REDIRECTS_TO_URL_NAME", "via": "search_strategy:define", "comment": "Target URL entity is a placeholder as search_strategy app is not yet defined." },
-    { "source": "url:/review_manager/create/", "target": "view:review_manager.session_create_view", "type": "ROUTES_TO_VIEW" },
-    
-    // Sprint 6: Advanced Features Relations
-    { "source": "model:review_manager.SessionStatusHistory", "target": "model:review_manager.SearchSession", "type": "FOREIGN_KEY", "field_name": "session" },
-    { "source": "model:review_manager.SessionStatusHistory", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "changed_by" },
-    { "source": "model:review_manager.SessionArchive", "target": "model:review_manager.SearchSession", "type": "ONE_TO_ONE", "field_name": "session" },
-    { "source": "model:review_manager.SessionArchive", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "archived_by" },
-    { "source": "model:review_manager.SessionArchive", "target": "model:accounts.User", "type": "FOREIGN_KEY", "field_name": "restored_by" },
-    { "source": "model:review_manager.UserSessionStats", "target": "model:accounts.User", "type": "ONE_TO_ONE", "field_name": "user" },
-    
-    // Signal Handler Relations
-    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.SearchSession", "type": "HANDLES_SIGNALS_FOR" },
-    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.SessionStatusHistory", "type": "CREATES_MODEL_INSTANCE" },
-    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.SessionActivity", "type": "CREATES_MODEL_INSTANCE" },
-    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.SessionArchive", "type": "CREATES_MODEL_INSTANCE" },
-    { "source": "class:review_manager.StatusChangeSignalHandler", "target": "model:review_manager.UserSessionStats", "type": "UPDATES_MODEL_INSTANCE" },
-    { "source": "class:review_manager.SignalUtils", "target": "class:review_manager.StatusChangeSignalHandler", "type": "PROVIDES_UTILITIES_FOR" },
-    { "source": "class:review_manager.SessionChangeTrackingMiddleware", "target": "class:review_manager.StatusChangeSignalHandler", "type": "PROVIDES_CONTEXT_FOR" },
-    
-    // View Relations
-    { "source": "view:review_manager.ActivityTimelineView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
-    { "source": "view:review_manager.ActivityTimelineView", "target": "model:review_manager.SessionActivity", "type": "QUERIES_MODEL" },
-    { "source": "view:review_manager.ActivityTimelineView", "target": "template:review_manager/activity_timeline.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:review_manager.StatusHistoryView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
-    { "source": "view:review_manager.StatusHistoryView", "target": "model:review_manager.SessionStatusHistory", "type": "QUERIES_MODEL" },
-    { "source": "view:review_manager.StatusHistoryView", "target": "template:review_manager/status_history.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:review_manager.ArchiveManagementView", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
-    { "source": "view:review_manager.ArchiveManagementView", "target": "model:review_manager.SessionArchive", "type": "QUERIES_MODEL" },
-    { "source": "view:review_manager.ArchiveManagementView", "target": "template:review_manager/archive_management.html", "type": "RENDERS_TEMPLATE" },
-    { "source": "view:review_manager.ArchiveSessionView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
-    { "source": "view:review_manager.ArchiveSessionView", "target": "class:review_manager.SignalUtils", "type": "USES_UTILITY" },
-    { "source": "view:review_manager.UnarchiveSessionView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
-    { "source": "view:review_manager.UnarchiveSessionView", "target": "class:review_manager.SignalUtils", "type": "USES_UTILITY" },
-    { "source": "view:review_manager.BulkArchiveView", "target": "model:review_manager.SearchSession", "type": "MANAGES_MODEL_INSTANCE" },
-    { "source": "view:review_manager.BulkArchiveView", "target": "class:review_manager.SignalUtils", "type": "USES_UTILITY" },
-    { "source": "view:review_manager.StatsAnalyticsView", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
-    { "source": "view:review_manager.StatsAnalyticsView", "target": "model:review_manager.UserSessionStats", "type": "QUERIES_MODEL" },
-    { "source": "view:review_manager.StatsAnalyticsView", "target": "template:review_manager/stats_analytics.html", "type": "RENDERS_TEMPLATE" },
-    
-    // AJAX Function Relations
-    { "source": "function:review_manager.activity_timeline_ajax", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
-    { "source": "function:review_manager.activity_timeline_ajax", "target": "model:review_manager.SessionActivity", "type": "QUERIES_MODEL" },
-    { "source": "function:review_manager.delete_activity_ajax", "target": "model:review_manager.SessionActivity", "type": "MANAGES_MODEL_INSTANCE" },
-    { "source": "function:review_manager.user_stats_ajax", "target": "model:review_manager.UserSessionStats", "type": "QUERIES_MODEL" },
-    { "source": "function:review_manager.user_stats_ajax", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
-    { "source": "function:review_manager.export_session_data_ajax", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
-    { "source": "function:review_manager.export_session_data_ajax", "target": "model:review_manager.SessionActivity", "type": "QUERIES_MODEL" },
-    { "source": "function:review_manager.export_session_data_ajax", "target": "model:review_manager.SessionStatusHistory", "type": "QUERIES_MODEL" },
-    { "source": "function:review_manager.productivity_chart_data_ajax", "target": "model:review_manager.SearchSession", "type": "QUERIES_MODEL" },
-    
-    // Template Relations
-    { "source": "template:review_manager/activity_timeline.html", "target": "templatetags:review_manager_extras", "type": "USES_TEMPLATE_TAGS" },
-    { "source": "template:review_manager/status_history.html", "target": "templatetags:review_manager_extras", "type": "USES_TEMPLATE_TAGS" },
-    { "source": "template:review_manager/archive_management.html", "target": "templatetags:review_manager_extras", "type": "USES_TEMPLATE_TAGS" },
-    { "source": "template:review_manager/stats_analytics.html", "target": "templatetags:review_manager_extras", "type": "USES_TEMPLATE_TAGS" },
-    { "source": "template:review_manager/activity_timeline.html", "target": "css:review_manager/css/timeline.css", "type": "INCLUDES_CSS" },
-    { "source": "template:review_manager/status_history.html", "target": "css:review_manager/css/status-history.css", "type": "INCLUDES_CSS" },
-    { "source": "template:review_manager/activity_timeline.html", "target": "css:review_manager/css/base.css", "type": "INCLUDES_CSS" },
-    { "source": "template:review_manager/status_history.html", "target": "css:review_manager/css/base.css", "type": "INCLUDES_CSS" },
-    { "source": "template:review_manager/archive_management.html", "target": "css:review_manager/css/base.css", "type": "INCLUDES_CSS" },
-    { "source": "template:review_manager/stats_analytics.html", "target": "css:review_manager/css/base.css", "type": "INCLUDES_CSS" },
-    
-    // URL to View Relations
-    { "source": "url:/review/<int:session_id>/timeline/", "target": "view:review_manager.ActivityTimelineView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/review/<int:session_id>/history/", "target": "view:review_manager.StatusHistoryView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/review/archives/", "target": "view:review_manager.ArchiveManagementView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/review/<int:session_id>/archive/", "target": "view:review_manager.ArchiveSessionView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/review/<int:session_id>/unarchive/", "target": "view:review_manager.UnarchiveSessionView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/review/bulk-archive/", "target": "view:review_manager.BulkArchiveView", "type": "ROUTES_TO_VIEW" },
-    { "source": "url:/review/analytics/", "target": "view:review_manager.StatsAnalyticsView", "type": "ROUTES_TO_VIEW" },
-    
-    // Cross-view Navigation Relations
-    { "source": "view:review_manager.ActivityTimelineView", "target": "view:review_manager.StatusHistoryView", "type": "PROVIDES_NAVIGATION_TO" },
-    { "source": "view:review_manager.StatusHistoryView", "target": "view:review_manager.ActivityTimelineView", "type": "PROVIDES_NAVIGATION_TO" },
-    { "source": "view:review_manager.ArchiveSessionView", "target": "view:review_manager.DashboardView", "type": "REDIRECTS_TO_URL_NAME", "via": "review_manager:dashboard" },
-    { "source": "view:review_manager.UnarchiveSessionView", "target": "view:review_manager.SessionDetailView", "type": "REDIRECTS_TO_URL_NAME", "via": "review_manager:session_detail" },
-    { "source": "view:review_manager.BulkArchiveView", "target": "view:review_manager.DashboardView", "type": "REDIRECTS_TO_URL_NAME", "via": "review_manager:dashboard" }
+    {
+      "source": "model:accounts.User",
+      "target": "setting:AUTH_USER_MODEL",
+      "type": "CONFIGURED_BY",
+      "description": "Custom User model is configured as AUTH_USER_MODEL"
+    },
+    {
+      "source": "model:review_manager.SearchSession",
+      "target": "model:accounts.User",
+      "type": "FOREIGN_KEY",
+      "field_name": "created_by",
+      "related_name": "created_sessions",
+      "description": "Each session is created by a user"
+    },
+    {
+      "source": "model:review_manager.SearchSession",
+      "target": "model:accounts.User",
+      "type": "FOREIGN_KEY",
+      "field_name": "updated_by",
+      "related_name": "updated_sessions",
+      "description": "Track who last updated each session"
+    },
+    {
+      "source": "model:review_manager.SessionActivity",
+      "target": "model:review_manager.SearchSession",
+      "type": "FOREIGN_KEY",
+      "field_name": "session",
+      "related_name": "activities",
+      "description": "Activities belong to sessions"
+    },
+    {
+      "source": "model:review_manager.SessionActivity",
+      "target": "model:accounts.User",
+      "type": "FOREIGN_KEY",
+      "field_name": "user",
+      "related_name": "session_activities",
+      "description": "Activities are performed by users"
+    },
+    {
+      "source": "model:review_manager.SessionStatusHistory",
+      "target": "model:review_manager.SearchSession",
+      "type": "FOREIGN_KEY",
+      "field_name": "session",
+      "related_name": "status_history",
+      "description": "Status history tracks session changes"
+    },
+    {
+      "source": "model:review_manager.SessionStatusHistory",
+      "target": "model:accounts.User",
+      "type": "FOREIGN_KEY",
+      "field_name": "changed_by",
+      "related_name": "status_changes",
+      "description": "Status changes are made by users"
+    },
+    {
+      "source": "model:review_manager.SessionArchive",
+      "target": "model:review_manager.SearchSession",
+      "type": "ONE_TO_ONE",
+      "field_name": "session",
+      "related_name": "archive_info",
+      "description": "Archive information for sessions"
+    },
+    {
+      "source": "model:review_manager.SessionArchive",
+      "target": "model:accounts.User",
+      "type": "FOREIGN_KEY",
+      "field_name": "archived_by",
+      "related_name": "archived_sessions",
+      "description": "User who archived the session"
+    },
+    {
+      "source": "model:review_manager.SessionArchive",
+      "target": "model:accounts.User",
+      "type": "FOREIGN_KEY",
+      "field_name": "restored_by",
+      "related_name": "restored_sessions",
+      "description": "User who restored the session"
+    },
+    {
+      "source": "model:review_manager.UserSessionStats",
+      "target": "model:accounts.User",
+      "type": "ONE_TO_ONE",
+      "field_name": "user",
+      "related_name": "session_stats",
+      "description": "Statistics for each user"
+    },
+    {
+      "source": "class:review_manager.SessionStatusManager",
+      "target": "model:review_manager.SearchSession",
+      "type": "MANAGES_WORKFLOW",
+      "description": "Manages status transitions for sessions"
+    },
+    {
+      "source": "class:review_manager.ErrorRecoveryManager",
+      "target": "model:review_manager.SearchSession",
+      "type": "PROVIDES_RECOVERY_FOR",
+      "description": "Provides error recovery for failed sessions"
+    },
+    {
+      "source": "form:review_manager.SessionCreateForm",
+      "target": "model:review_manager.SearchSession",
+      "type": "BASED_ON_MODEL",
+      "description": "Form for creating search sessions"
+    },
+    {
+      "source": "form:review_manager.SessionCreateForm",
+      "target": "model:review_manager.SessionActivity",
+      "type": "CREATES_MODEL_INSTANCE",
+      "method_name": "save",
+      "description": "Creates activity log when saving"
+    },
+    {
+      "source": "form:review_manager.SessionEditForm",
+      "target": "model:review_manager.SearchSession",
+      "type": "BASED_ON_MODEL",
+      "description": "Form for editing search sessions"
+    },
+    {
+      "source": "view:review_manager.DashboardView",
+      "target": "model:review_manager.SearchSession",
+      "type": "QUERIES_MODEL",
+      "description": "Dashboard displays user sessions"
+    },
+    {
+      "source": "view:review_manager.DashboardView",
+      "target": "template:review_manager/dashboard.html",
+      "type": "RENDERS_TEMPLATE",
+      "description": "Dashboard renders main template"
+    },
+    {
+      "source": "view:review_manager.DashboardView",
+      "target": "mixin:review_manager.SessionNavigationMixin",
+      "type": "USES_MIXIN",
+      "description": "Uses navigation logic"
+    },
+    {
+      "source": "view:review_manager.SessionDetailView",
+      "target": "model:review_manager.SearchSession",
+      "type": "MANAGES_MODEL_INSTANCE",
+      "description": "Shows detailed session view"
+    },
+    {
+      "source": "view:review_manager.SessionDetailView",
+      "target": "template:review_manager/session_detail.html",
+      "type": "RENDERS_TEMPLATE",
+      "description": "Renders session detail template"
+    },
+    {
+      "source": "view:review_manager.SessionDetailView",
+      "target": "mixin:review_manager.SessionNavigationMixin",
+      "type": "USES_MIXIN",
+      "description": "Uses navigation logic"
+    },
+    {
+      "source": "view:review_manager.SessionUpdateView",
+      "target": "model:review_manager.SearchSession",
+      "type": "MANAGES_MODEL_INSTANCE",
+      "description": "Updates session data"
+    },
+    {
+      "source": "view:review_manager.SessionUpdateView",
+      "target": "form:review_manager.SessionEditForm",
+      "type": "USES_FORM",
+      "description": "Uses edit form"
+    },
+    {
+      "source": "view:review_manager.SessionUpdateView",
+      "target": "template:review_manager/session_edit.html",
+      "type": "RENDERS_TEMPLATE",
+      "description": "Renders edit template"
+    },
+    {
+      "source": "view:review_manager.SessionDeleteView",
+      "target": "model:review_manager.SearchSession",
+      "type": "MANAGES_MODEL_INSTANCE",
+      "description": "Deletes sessions (draft only)"
+    },
+    {
+      "source": "view:review_manager.SessionDeleteView",
+      "target": "template:review_manager/session_confirm_delete.html",
+      "type": "RENDERS_TEMPLATE",
+      "description": "Renders delete confirmation"
+    },
+    {
+      "source": "view:review_manager.DuplicateSessionView",
+      "target": "model:review_manager.SearchSession",
+      "type": "MANAGES_MODEL_INSTANCE",
+      "description": "Creates session copies"
+    },
+    {
+      "source": "view:review_manager.DuplicateSessionView",
+      "target": "model:review_manager.SessionActivity",
+      "type": "CREATES_MODEL_INSTANCE",
+      "description": "Logs duplication activity"
+    },
+    {
+      "source": "function:review_manager.session_create_view",
+      "target": "form:review_manager.SessionCreateForm",
+      "type": "USES_FORM",
+      "description": "Uses creation form"
+    },
+    {
+      "source": "function:review_manager.session_create_view",
+      "target": "template:review_manager/session_create.html",
+      "type": "RENDERS_TEMPLATE",
+      "description": "Renders creation template"
+    },
+    {
+      "source": "function:review_manager.session_stats_ajax",
+      "target": "model:review_manager.SearchSession",
+      "type": "QUERIES_MODEL",
+      "description": "Returns session statistics"
+    },
+    {
+      "source": "function:review_manager.archive_session_ajax",
+      "target": "model:review_manager.SearchSession",
+      "type": "MANAGES_MODEL_INSTANCE",
+      "description": "Archives sessions via AJAX"
+    },
+    {
+      "source": "function:review_manager.archive_session_ajax",
+      "target": "model:review_manager.SessionActivity",
+      "type": "CREATES_MODEL_INSTANCE",
+      "description": "Logs archive activity"
+    },
+    {
+      "source": "template:review_manager/dashboard.html",
+      "target": "template:review_manager/base.html",
+      "type": "EXTENDS_TEMPLATE",
+      "description": "Extends base template"
+    },
+    {
+      "source": "template:review_manager/dashboard.html",
+      "target": "templatetags:review_manager_extras",
+      "type": "USES_TEMPLATE_TAGS",
+      "description": "Uses custom template tags"
+    },
+    {
+      "source": "template:review_manager/dashboard.html",
+      "target": "static:review_manager/css/dashboard.css",
+      "type": "INCLUDES_CSS",
+      "description": "Includes dashboard styling"
+    },
+    {
+      "source": "template:review_manager/dashboard.html",
+      "target": "static:review_manager/css/status_indicators.css",
+      "type": "INCLUDES_CSS",
+      "description": "Includes status styling"
+    },
+    {
+      "source": "template:review_manager/dashboard.html",
+      "target": "static:review_manager/js/dashboard.js",
+      "type": "INCLUDES_JS",
+      "description": "Includes dashboard JavaScript"
+    },
+    {
+      "source": "template:review_manager/session_detail.html",
+      "target": "template:review_manager/base.html",
+      "type": "EXTENDS_TEMPLATE",
+      "description": "Extends base template"
+    },
+    {
+      "source": "template:review_manager/session_create.html",
+      "target": "template:review_manager/base.html",
+      "type": "EXTENDS_TEMPLATE",
+      "description": "Extends base template"
+    },
+    {
+      "source": "template:review_manager/session_edit.html",
+      "target": "template:review_manager/base.html",
+      "type": "EXTENDS_TEMPLATE",
+      "description": "Extends base template"
+    },
+    {
+      "source": "template:review_manager/session_confirm_delete.html",
+      "target": "template:review_manager/base.html",
+      "type": "EXTENDS_TEMPLATE",
+      "description": "Extends base template"
+    },
+    {
+      "source": "url:/review/",
+      "target": "view:review_manager.DashboardView",
+      "type": "ROUTES_TO_VIEW",
+      "description": "Dashboard URL routing"
+    },
+    {
+      "source": "url:/review/create/",
+      "target": "function:review_manager.session_create_view",
+      "type": "ROUTES_TO_VIEW",
+      "description": "Creation URL routing"
+    },
+    {
+      "source": "url:/review/<uuid:session_id>/",
+      "target": "view:review_manager.SessionDetailView",
+      "type": "ROUTES_TO_VIEW",
+      "description": "Detail URL routing"
+    },
+    {
+      "source": "url:/review/<uuid:session_id>/edit/",
+      "target": "view:review_manager.SessionUpdateView",
+      "type": "ROUTES_TO_VIEW",
+      "description": "Edit URL routing"
+    },
+    {
+      "source": "url:/review/<uuid:session_id>/delete/",
+      "target": "view:review_manager.SessionDeleteView",
+      "type": "ROUTES_TO_VIEW",
+      "description": "Delete URL routing"
+    },
+    {
+      "source": "url:/review/<uuid:session_id>/duplicate/",
+      "target": "view:review_manager.DuplicateSessionView",
+      "type": "ROUTES_TO_VIEW",
+      "description": "Duplicate URL routing"
+    },
+    {
+      "source": "setting:LOGIN_REDIRECT_URL",
+      "target": "url:/review/",
+      "type": "DEFINES_URL_REFERENCE",
+      "description": "Post-login redirect to dashboard"
+    },
+    {
+      "source": "management_command:review_manager.create_sample_sessions",
+      "target": "model:review_manager.SearchSession",
+      "type": "CREATES_MODEL_INSTANCE",
+      "description": "Creates sample session data"
+    },
+    {
+      "source": "management_command:review_manager.create_sample_sessions",
+      "target": "model:review_manager.SessionActivity",
+      "type": "CREATES_MODEL_INSTANCE",
+      "description": "Creates sample activity data"
+    },
+    {
+      "source": "view:review_manager.DashboardView",
+      "target": "view:review_manager.SessionDetailView",
+      "type": "PROVIDES_NAVIGATION_TO",
+      "description": "Dashboard links to session details"
+    },
+    {
+      "source": "view:review_manager.SessionDetailView",
+      "target": "view:review_manager.SessionUpdateView",
+      "type": "PROVIDES_NAVIGATION_TO",
+      "description": "Detail view links to edit"
+    },
+    {
+      "source": "view:review_manager.SessionDetailView",
+      "target": "view:review_manager.SessionDeleteView",
+      "type": "PROVIDES_NAVIGATION_TO",
+      "description": "Detail view links to delete (if draft)"
+    },
+    {
+      "source": "view:review_manager.SessionDetailView",
+      "target": "view:review_manager.DuplicateSessionView",
+      "type": "PROVIDES_NAVIGATION_TO",
+      "description": "Detail view links to duplicate"
+    },
+    {
+      "source": "view:review_manager.SessionUpdateView",
+      "target": "view:review_manager.SessionDetailView",
+      "type": "REDIRECTS_TO_URL_NAME",
+      "via": "review_manager:session_detail",
+      "description": "Edit redirects to detail after save"
+    },
+    {
+      "source": "view:review_manager.SessionDeleteView",
+      "target": "view:review_manager.DashboardView",
+      "type": "REDIRECTS_TO_URL_NAME",
+      "via": "review_manager:dashboard",
+      "description": "Delete redirects to dashboard"
+    },
+    {
+      "source": "view:review_manager.DuplicateSessionView",
+      "target": "view:review_manager.SessionUpdateView",
+      "type": "REDIRECTS_TO_URL_NAME",
+      "via": "review_manager:edit_session",
+      "description": "Duplicate redirects to edit new copy"
+    },
+    {
+      "source": "function:review_manager.session_create_view",
+      "target": "app:search_strategy",
+      "type": "REDIRECTS_TO_APP",
+      "description": "Creation redirects to strategy definition (future)"
+    },
+    {
+      "source": "model:review_manager.SearchSession",
+      "target": "app:search_strategy",
+      "type": "FUTURE_INTEGRATION",
+      "description": "Will integrate with search strategy app"
+    },
+    {
+      "source": "model:review_manager.SearchSession",
+      "target": "app:serp_execution",
+      "type": "FUTURE_INTEGRATION",
+      "description": "Will integrate with search execution app"
+    },
+    {
+      "source": "model:review_manager.SearchSession",
+      "target": "app:results_manager",
+      "type": "FUTURE_INTEGRATION",
+      "description": "Will integrate with results processing app"
+    },
+    {
+      "source": "model:review_manager.SearchSession",
+      "target": "app:review_results",
+      "type": "FUTURE_INTEGRATION",
+      "description": "Will integrate with review workflow app"
+    },
+    {
+      "source": "model:review_manager.SearchSession",
+      "target": "app:reporting",
+      "type": "FUTURE_INTEGRATION",
+      "description": "Will integrate with reporting app"
+    },
+    {
+      "source": "mixin:review_manager.SessionNavigationMixin",
+      "target": "app:search_strategy",
+      "type": "FUTURE_NAVIGATION",
+      "description": "Will provide navigation to strategy definition"
+    },
+    {
+      "source": "mixin:review_manager.SessionNavigationMixin",
+      "target": "app:serp_execution",
+      "type": "FUTURE_NAVIGATION",
+      "description": "Will provide navigation to search execution"
+    },
+    {
+      "source": "mixin:review_manager.SessionNavigationMixin",
+      "target": "app:review_results",
+      "type": "FUTURE_NAVIGATION",
+      "description": "Will provide navigation to review workflow"
+    },
+    {
+      "source": "mixin:review_manager.SessionNavigationMixin",
+      "target": "app:reporting",
+      "type": "FUTURE_NAVIGATION",
+      "description": "Will provide navigation to reporting"
+    }
   ]
 }

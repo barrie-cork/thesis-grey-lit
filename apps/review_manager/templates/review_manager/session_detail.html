@@ -157,7 +157,7 @@
                             <div class="timeline-content">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <strong>{{ activity.get_activity_type_display }}</strong>
+                                        <strong>{{ activity.get_action_display }}</strong>
                                         {% if activity.old_status and activity.new_status %}
                                             <span class="text-muted">
                                                 ({{ activity.get_old_status_display }} → {{ activity.get_new_status_display }})
@@ -165,8 +165,8 @@
                                         {% endif %}
                                         <p class="mb-1">{{ activity.description }}</p>
                                         <small class="text-muted">
-                                            by {{ activity.performed_by.username }} • 
-                                            {{ activity.performed_at|date:"M j, Y \a\t g:i A" }}
+                                            by {{ activity.user.username }} • 
+                                            {{ activity.timestamp|date:"M j, Y \a\t g:i A" }}
                                         </small>
                                     </div>
                                 </div>
